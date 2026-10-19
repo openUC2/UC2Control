@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Scans live in the app's own folder: Android/data/<package>/files/scans. -->
+<paths>
+    <external-files-path name="scans" path="scans/" />
+    <files-path name="scans_internal" path="scans/" />
+</paths>

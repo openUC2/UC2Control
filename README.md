@@ -6,6 +6,11 @@ It covers the hardware control surface of the
 matrix, homing, TMC and CAN setup, and a raw JSON console — without needing a
 laptop in the lab.
 
+The **Scan** tab turns phone + USB webcam + XY stage into a low-cost
+ShitScope: live view, a stage overview you can tap to move, XY(Z) jog, and
+tiled 2D scans saved on the phone in the ShitScope folder layout, ready to
+share to Drive or Dropbox and to stitch on a computer with ImSwitch.
+
 <!-- Screenshots go here once you have a board to point it at. -->
 
 ---
@@ -154,6 +159,7 @@ Tabs:
 
 | Tab | What is in it |
 |---|---|
+| **Scan** | USB-webcam live view, stage overview, XY(Z) jog, tile scan, share — see [Tile scanning](#tile-scanning) |
 | **Stage** | XYZA jog, continuous motion, per-axis stop, big STOP ALL, motor power |
 | **Light** | 5 laser/LED PWM channels, LED ring and half-field patterns, 8×8 single-LED grid |
 | **Setup** | Homing, TMC driver, CAN address, board queries, connection troubleshooting |
@@ -208,7 +214,93 @@ set **Force driver ▸ CDC-ACM** and reconnect — and please send us the
 Diagnostics dump so the id can be mapped properly.
 
 If your board is not detected at all, add its VID/PID to `UsbDrivers.java`
-*and* to `res/xml/device_filter.xml` (which takes **decimal** ids).
+*and* to `res/xml/usb_serial_filter.xml` (which takes **decimal** ids). The file
+must not be called `device_filter.xml`: the webcam library reads a resource of
+that name to find cameras, and the app's copy would replace it.
+
+---
+
+## Tile scanning
+
+The Scan tab does what ImSwitch's ShitScope does — move, settle, take a frame
+exposed after the move, save it, show it on the overview — with a phone in
+place of the computer.
+
+### Hardware
+
+```
+phone ── USB-C OTG hub ──┬── USB webcam (any UVC camera)
+                         └── stage: openUC2 ESP32 board, or the PCB planar stage
+```
+
+Most phones run a webcam and a serial board through one powered OTG hub. The
+camera alone also works: pick **No stage** to try live view, storage and
+sharing without any stage.
+
+### Steps
+
+1. **Connect** the stage in the bar at the top (115200 baud for an openUC2
+   board, 9600 for the PCB stage), then pick its protocol under **Stage
+   hardware** and check µm/step and speed.
+2. Tap **Camera**, allow camera and USB access. The live view opens at the
+   camera's largest mode and fills in the image width and height.
+3. Enter the **pixel size at the sample** (µm). Field of view = width ×
+   height × pixel size; empty steps default to field of view × (1 − overlap).
+4. Jog, or tap the overview, to the middle of the area; set tiles X/Y; the
+   outlines on the map show the grid you are about to scan.
+5. **Start scan.** Thumbnails land on the map at their commanded positions;
+   **Stop** finishes the current tile and keeps everything taken so far.
+   Exposure is locked for the scan so tiles match in brightness.
+6. **Share last scan** zips the folder and opens the share sheet: Drive,
+   Dropbox, Nextcloud, mail, Nearby Share.
+
+| Protocol | Speaks | Notes |
+|---|---|---|
+| UC2 board | UC2-REST JSON, `/motor_act` with a `qid`; a move ends when every axis answered `isDone` | X, Y, Z. Default 0.3125 µm/step |
+| ShitScope PCB stage | ASCII `MOVE dx dy speed`, `BUSY`, `STOP`, as ImSwitch's `StepperXYStageManager` | XY only. Every move ends travelling in +X/+Y (overshoot µsteps, 0 = off), so use raster rather than snake. Coils are switched off (`STOP`) after each jog or scan. Defaults from `shitscope_hik.json` |
+| No stage | nothing | position only, for trying the app |
+
+A negative µm/step inverts an axis. If the thumbnails on the map do not line
+up, the camera sees the stage move the other way: tick **Flip map X/Y**.
+Positions are tracked from the moves sent, starting at 0 when the app starts;
+moves made from the Stage tab or after a **Stop** are not tracked.
+
+### What is saved
+
+```
+Android/data/com.openuc2.control/files/scans/20261018_141500/
+    scan.json     pixel size, plan, start position, settings
+    tiles.json    per tile: ix, iy, commanded x/y (µm), stage position, file
+    tiles/tile_0000.jpg …     JPEG quality 95, as delivered by the camera
+```
+
+This is ImSwitch's ShitScope scan layout. Copy the folder over USB, or share
+the zip.
+
+### Stitching (on the computer)
+
+Stitching stays off the phone on purpose: tiles from a low-cost stage are
+misplaced by up to ~0.4 mm, so they must be registered against each other
+first, and that is what ImSwitch's ShitScope pipeline already does well. With
+ImSwitch's environment:
+
+```bash
+python tools/stitch_scan.py ~/Downloads/20261018_141500.zip --full
+```
+
+It converts the tiles to TIFF, registers them, prints the placement errors,
+and writes `scan_quality.json`, `stitched.tif` and, with `--full`,
+`stitched_full.tif` next to the tiles. The overview on the phone places
+tiles at their commanded positions only, like ShitScope's live preview.
+
+### Other cameras (HIK, Daheng)
+
+The scan only needs `Camera` (`Camera.java`): open, draw a preview into a
+`SurfaceTexture`, return one fresh frame as JPEG, lock exposure. `UvcCamera`
+implements it for webcams. A HIK (MVS) or Daheng (Galaxy) camera needs its
+vendor's Android SDK (`.aar`/`.so`, from the vendor's download page) in
+`app/libs` and a class implementing the same five methods; nothing else in
+the scan changes.
 
 ---
 
@@ -250,14 +342,25 @@ app/src/main/
 │   ├── UsbSerialManager.java   connect/read/write/baud, threading, error recovery
 │   ├── UsbDrivers.java         probe table, forced drivers, USB diagnostics
 │   ├── UC2Commands.java        JSON command builders
-│   └── ConsoleBuffer.java      bounded, colourised console
+│   ├── ConsoleBuffer.java      bounded, colourised console
+│   ├── ScanTab.java            Scan tab: wiring, settings, scan start/stop, share
+│   ├── TileScan.java           scan grid + the scan loop, ShitScope folder layout
+│   ├── StageMapView.java       stage overview: plan, thumbnails, field of view, tap
+│   ├── Stage.java              stage interface (+ a position-only stage)
+│   ├── Uc2Stage.java           openUC2 board, UC2-REST JSON, waits for isDone
+│   ├── PcbStage.java           ShitScope PCB stage, ASCII MOVE/BUSY/STOP
+│   ├── SerialLink.java         line-based request/reply over the serial port
+│   ├── Camera.java             camera interface
+│   └── UvcCamera.java          USB webcams (UVCAndroid)
 └── res/
     ├── layout/                 activity_main + one layout per tab
     ├── values/                 colors (brand palette), themes, strings
     ├── font/                   Space Grotesk, IBM Plex Mono
-    └── xml/device_filter.xml   USB auto-attach filter (decimal ids!)
+    ├── xml/usb_serial_filter.xml   USB auto-attach filter (decimal ids!)
+    └── xml/file_paths.xml      what the share sheet may read (the scans)
 
-app/src/test/                   protocol tests, no device needed
+app/src/test/                   protocol, grid and stage tests, no device needed
+tools/stitch_scan.py            register + stitch a phone scan with ImSwitch
 ```
 
 ---
@@ -284,5 +387,7 @@ have a Stolzl licence, drop the TTFs into `res/font/` and repoint
 
 ## Not included
 
-Webcam preview, WebRTC streaming and timelapse from the web demo are out of
-scope — they need a camera pipeline rather than a serial link.
+WebRTC streaming and timelapse from the web demo. On-device stitching (see
+[Stitching](#stitching-on-the-computer)). UC2 boards over WiFi (same JSON,
+over HTTP): add a `SerialLink`-like transport when the phone's USB port must
+stay free for the camera.

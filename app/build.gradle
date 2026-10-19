@@ -84,5 +84,10 @@ dependencies {
     // USB OTG serial (CDC-ACM, CP21xx, CH34x, FTDI, Prolific)
     implementation 'com.github.mik3y:usb-serial-for-android:3.7.0'
 
+    // USB (UVC) webcams without root: libusb + libuvc, prebuilt for all ABIs
+    implementation 'com.herohan:UVCAndroid:1.0.13'
+
     testImplementation 'junit:junit:4.13.2'
+    // android.jar's org.json is a stub on the JVM; the stage tests parse real frames
+    testImplementation 'org.json:json:20240303'
 }

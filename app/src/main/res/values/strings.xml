@@ -16,6 +16,7 @@
     <string name="force_driver">Force driver</string>
 
     <!-- Tabs -->
+    <string name="tab_scan">Scan</string>
     <string name="tab_stage">Stage</string>
     <string name="tab_light">Light</string>
     <string name="tab_setup">Setup</string>
@@ -29,6 +30,50 @@
     <string name="stop_all">STOP ALL</string>
     <string name="motor_power">Motor power</string>
     <string name="auto_enable_hint">Auto: coils are powered only while moving. Always on: the stage holds position but the drivers stay warm.</string>
+
+    <!-- Scan -->
+    <string name="live_title">Live view</string>
+    <string name="cam_hint">USB webcam through the OTG adapter. With a USB hub the stage stays plugged in too.</string>
+    <string name="camera_connect">Camera</string>
+    <string name="overview_title">Stage overview</string>
+    <string name="overview_hint">Tap the map to move there. Green: the camera now · outlines: the next scan · thumbnails: the last scan, at commanded positions.</string>
+    <string name="cd_map">Stage overview map</string>
+    <string name="position_unknown">X — · Y — · Z —</string>
+    <string name="jog_step">JOG STEP µm</string>
+    <string name="scan_title">Tile scan</string>
+    <string name="scan_hint">Pixel size is at the sample. Empty steps = field of view minus the overlap. Registration and stitching run on the computer afterwards.</string>
+    <string name="pixel_size">PIXEL µm</string>
+    <string name="image_width">Width px</string>
+    <string name="image_height">Height px</string>
+    <string name="tiles_x">Tiles X</string>
+    <string name="tiles_y">Tiles Y</string>
+    <string name="overlap">Overlap %</string>
+    <string name="step_x">STEP X µm</string>
+    <string name="step_y">STEP Y µm</string>
+    <string name="auto">auto</string>
+    <string name="settle">Settle ms</string>
+    <string name="snake">Snake (alternate rows; raster suits the PCB stage)</string>
+    <string name="centred">Centre the grid on the current position</string>
+    <string name="return_to_start">Return to the start afterwards</string>
+    <string name="scan_start">Start scan</string>
+    <string name="scan_stop">Stop</string>
+    <string name="scan_ready">Ready.</string>
+    <string name="share_scan">Share last scan (Drive, Dropbox …)</string>
+    <string name="stage_hw_title">Stage hardware</string>
+    <string name="stage_hw_hint">Connect the board at the top first; the PCB stage talks at 9600 baud. A negative µm/step inverts an axis.</string>
+    <string name="protocol">Protocol</string>
+    <string name="ums_x">µm/STEP X</string>
+    <string name="ums_y">µm/STEP Y</string>
+    <string name="ums_z">µm/STEP Z</string>
+    <string name="stage_speed">Speed steps/s</string>
+    <string name="overshoot">OVERSHOOT µsteps</string>
+    <string name="flip_x">Flip map X</string>
+    <string name="flip_y">Flip map Y</string>
+    <string-array name="stage_protocols">
+        <item>UC2 board · JSON (UC2-REST)</item>
+        <item>ShitScope PCB stage · ASCII</item>
+        <item>No stage · camera test</item>
+    </string-array>
 
     <!-- Light -->
     <string name="lasers_title">Laser / LED channels</string>

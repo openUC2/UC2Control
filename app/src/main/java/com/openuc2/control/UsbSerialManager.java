@@ -59,6 +59,11 @@ public class UsbSerialManager implements SerialInputOutputManager.Listener {
         void onLog(LogLevel level, String message);
     }
 
+    /** Unbatched received text, on the USB read thread. For request/reply protocols. */
+    public interface RawListener {
+        void onRaw(String text);
+    }
+
     private final Context appContext;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
@@ -68,6 +73,7 @@ public class UsbSerialManager implements SerialInputOutputManager.Listener {
     private boolean flushScheduled = false;
 
     private Listener listener;
+    private volatile RawListener rawListener;
     private volatile UsbSerialPort port;
     private volatile SerialInputOutputManager ioManager;
     private volatile State state = State.DISCONNECTED;
@@ -90,6 +96,7 @@ public class UsbSerialManager implements SerialInputOutputManager.Listener {
     // ======================================================================
 
     public void setListener(Listener l)          { this.listener = l; }
+    public void setRawListener(RawListener l)    { this.rawListener = l; }
     public boolean isConnected()                 { return state == State.CONNECTED; }
     public State getState()                      { return state; }
     public int getCurrentBaud()                  { return currentBaud; }
@@ -182,9 +189,12 @@ public class UsbSerialManager implements SerialInputOutputManager.Listener {
             return null;
         }
         if (forcedDriverIndex > 0) {
-            UsbDevice first = attached.iterator().next();
-            UsbSerialDriver forced = UsbDrivers.forceDriver(first, forcedDriverIndex);
-            if (forced != null) return forced;
+            // Never force a serial driver onto the webcam sharing the OTG hub.
+            for (UsbDevice d : attached) {
+                if (UsbDrivers.isCamera(d)) continue;
+                UsbSerialDriver forced = UsbDrivers.forceDriver(d, forcedDriverIndex);
+                if (forced != null) return forced;
+            }
         }
         fail(attached.size() + " USB device(s) attached but none is a known serial chip. "
                 + "Open Diagnostics, or set Force driver.");
@@ -386,6 +396,14 @@ public class UsbSerialManager implements SerialInputOutputManager.Listener {
 
     /** Queue a command for writing. Adds a newline unless disabled. */
     public void send(String command) {
+        send(command, true);
+    }
+
+    /**
+     * Same, but {@code logTx=false} keeps it out of the console. Status polls
+     * (BUSY every 20 ms during a scan) would otherwise flood the main thread.
+     */
+    public void send(String command, boolean logTx) {
         UsbSerialPort p = port;
         if (p == null || state != State.CONNECTED) {
             fail("Not connected — command not sent.");
@@ -400,7 +418,7 @@ public class UsbSerialManager implements SerialInputOutputManager.Listener {
             }
             try {
                 target.write(wire.getBytes(StandardCharsets.UTF_8), WRITE_TIMEOUT_MS);
-                log(LogLevel.TX, command);
+                if (logTx) log(LogLevel.TX, command);
             } catch (IOException e) {
                 fail("Write failed: " + e.getMessage());
                 teardown();
@@ -427,8 +445,11 @@ public class UsbSerialManager implements SerialInputOutputManager.Listener {
 
     @Override
     public void onNewData(byte[] data) {
+        String text = new String(data, StandardCharsets.UTF_8);
+        RawListener raw = rawListener;
+        if (raw != null) raw.onRaw(text);
         synchronized (rxLock) {
-            rxBuffer.append(new String(data, StandardCharsets.UTF_8));
+            rxBuffer.append(text);
             if (flushScheduled) return;
             flushScheduled = true;
         }

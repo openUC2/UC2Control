@@ -37,6 +37,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialManager.
     private static final int LED_GRID_SIZE = 64;
 
     private UsbSerialManager serial;
+    private ScanTab scanTab;
     private final ConsoleBuffer console = new ConsoleBuffer();
 
     // Header / connection
@@ -90,6 +91,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialManager.
         setupLight();
         setupSetup();
         setupConsole();
+        scanTab = new ScanTab(this, serial);
 
         setUiEnabled(false);
         printBanner();
@@ -105,7 +107,14 @@ public class MainActivity extends AppCompatActivity implements UsbSerialManager.
     }
 
     @Override
+    protected void onPause() {
+        scanTab.save();
+        super.onPause();
+    }
+
+    @Override
     protected void onDestroy() {
+        if (scanTab != null) scanTab.release();
         if (serial != null) serial.release();
         super.onDestroy();
     }
@@ -169,6 +178,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialManager.
         baudSpinner   = findViewById(R.id.spinner_baud);
 
         tabPages = new View[]{
+                findViewById(R.id.tab_content_scan),
                 findViewById(R.id.tab_content_stage),
                 findViewById(R.id.tab_content_light),
                 findViewById(R.id.tab_content_setup),
@@ -186,7 +196,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialManager.
 
     private void setupTabs() {
         TabLayout tabs = findViewById(R.id.tabs);
-        int[] titles = {R.string.tab_stage, R.string.tab_light,
+        int[] titles = {R.string.tab_scan, R.string.tab_stage, R.string.tab_light,
                         R.string.tab_setup, R.string.tab_console};
         for (int t : titles) tabs.addTab(tabs.newTab().setText(t));
 
@@ -584,7 +594,10 @@ public class MainActivity extends AppCompatActivity implements UsbSerialManager.
      * old build drift out of sync with the layout.
      */
     private void setUiEnabled(boolean connected) {
-        for (View page : tabPages) setEnabledRecursive(page, connected);
+        for (View page : tabPages) {
+            // The Scan tab works without a board (camera only) and says so itself.
+            if (page.getId() != R.id.tab_content_scan) setEnabledRecursive(page, connected);
+        }
         for (int id : ALWAYS_ENABLED) {
             View v = findViewById(id);
             if (v != null) v.setEnabled(true);

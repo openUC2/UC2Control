@@ -145,6 +145,7 @@
         android:layout_height="0dp"
         android:layout_weight="1">
 
+        <include layout="@layout/tab_scan" />
         <include layout="@layout/tab_stage" />
         <include layout="@layout/tab_light" />
         <include layout="@layout/tab_setup" />

@@ -1,5 +1,6 @@
 package com.openuc2.control;
 
+import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
@@ -148,6 +149,14 @@ public final class UsbDrivers {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /** True for a UVC webcam (any video-class interface). */
+    public static boolean isCamera(UsbDevice device) {
+        for (int i = 0; i < device.getInterfaceCount(); i++) {
+            if (device.getInterface(i).getInterfaceClass() == UsbConstants.USB_CLASS_VIDEO) return true;
+        }
+        return false;
     }
 
     /** Short label for a device, e.g. "ESP32-S3 (303A:1001)". */
