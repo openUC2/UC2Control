@@ -33,8 +33,18 @@
 
     <!-- Scan -->
     <string name="live_title">Live view</string>
-    <string name="cam_hint">USB webcam through the OTG adapter. With a USB hub the stage stays plugged in too.</string>
-    <string name="camera_connect">Camera</string>
+    <string name="cam_hint">A USB webcam, the phone\'s own camera or a Daheng USB3 camera. With a USB hub the stage stays plugged in too.</string>
+    <string name="camera_type">Camera</string>
+    <string name="camera_connect">Connect</string>
+    <string name="exposure">Exposure ms</string>
+    <string name="gain">Gain</string>
+    <string name="apply_exposure">Apply</string>
+    <string name="exposure_hint">Fixed for every tile, and applied again when a scan starts. Gain is ISO on the phone, dB on Daheng, the raw value on webcams (0 = lowest). Apply also locks focus and white balance.</string>
+    <string-array name="camera_types">
+        <item>USB webcam (UVC)</item>
+        <item>Phone camera</item>
+        <item>Daheng USB3 camera</item>
+    </string-array>
     <string name="overview_title">Stage overview</string>
     <string name="overview_hint">Tap the map to move there. Green: the camera now · outlines: the next scan · thumbnails: the last scan, at commanded positions.</string>
     <string name="cd_map">Stage overview map</string>
@@ -55,6 +65,7 @@
     <string name="snake">Snake (alternate rows; raster suits the PCB stage)</string>
     <string name="centred">Centre the grid on the current position</string>
     <string name="return_to_start">Return to the start afterwards</string>
+    <string name="copy_to_gallery">Copy the tiles to the gallery afterwards</string>
     <string name="scan_start">Start scan</string>
     <string name="scan_stop">Stop</string>
     <string name="scan_ready">Ready.</string>

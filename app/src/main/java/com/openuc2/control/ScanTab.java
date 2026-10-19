@@ -2,6 +2,8 @@ package com.openuc2.control;
 
 import android.Manifest;
 import android.content.ClipData;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -10,9 +12,12 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.SurfaceTexture;
 import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.TextureView;
@@ -43,7 +48,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -76,9 +83,11 @@ final class ScanTab implements Camera.Listener {
             {R.id.et_ums_x, R.id.et_ums_y, R.id.et_ums_z, R.id.et_stage_speed, R.id.et_overshoot};
     private static final int[] SCAN_FIELDS = {R.id.et_px_size, R.id.et_img_w, R.id.et_img_h,
             R.id.et_nx, R.id.et_ny, R.id.et_overlap, R.id.et_step_x, R.id.et_step_y, R.id.et_settle,
-            R.id.et_jog_step};
-    private static final int[] CHECKS =
-            {R.id.cb_snake, R.id.cb_centred, R.id.cb_return, R.id.cb_flip_x, R.id.cb_flip_y};
+            R.id.et_jog_step, R.id.et_exposure, R.id.et_gain};
+    private static final int[] CHECKS = {R.id.cb_snake, R.id.cb_centred, R.id.cb_return,
+            R.id.cb_gallery, R.id.cb_flip_x, R.id.cb_flip_y};
+    /** Camera choices, in the order of R.array.camera_types; Daheng only when its SDK was built in. */
+    private static final int CAM_UVC = 0, CAM_PHONE = 1, CAM_DAHENG = 2;
     private static final int[] JOG_BUTTONS = {R.id.btn_scan_x_minus, R.id.btn_scan_x_plus,
             R.id.btn_scan_y_minus, R.id.btn_scan_y_plus, R.id.btn_scan_z_minus, R.id.btn_scan_z_plus};
     private static final int MAX_TILES_PER_AXIS = 200;
@@ -90,7 +99,6 @@ final class ScanTab implements Camera.Listener {
     private final AppCompatActivity activity;
     private final UsbSerialManager serial;
     private final SerialLink link;
-    private final Camera camera;
     private final SharedPreferences prefs;
     private final ExecutorService hw = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -100,8 +108,11 @@ final class ScanTab implements Camera.Listener {
     private final StageMapView map;
     private final TextView camStatus, position, scanInfo, scanStatus;
     private final ProgressBar progress;
-    private final Spinner stageSpinner;
+    private final Spinner stageSpinner, cameraSpinner;
 
+    private Camera camera;
+    private int cameraType = -1;
+    private String cameraStatus = "";
     private Stage stage;
     private String stageKey = "";
     private int stageType = -1;            // protocol whose values the stage fields hold
@@ -119,7 +130,6 @@ final class ScanTab implements Camera.Listener {
         this.serial = serial;
         link = new SerialLink(serial);
         serial.setRawListener(link);
-        camera = new UvcCamera(activity.getApplication(), this);
         prefs = activity.getSharedPreferences("scan", Context.MODE_PRIVATE);
 
         preview = activity.findViewById(R.id.tex_preview);
@@ -130,12 +140,21 @@ final class ScanTab implements Camera.Listener {
         scanStatus = activity.findViewById(R.id.tv_scan_status);
         progress = activity.findViewById(R.id.pb_scan);
         stageSpinner = activity.findViewById(R.id.sp_stage);
+        cameraSpinner = activity.findViewById(R.id.sp_camera);
 
         cameraPermission = activity.registerForActivityResult(
                 new ActivityResultContracts.RequestPermission(), granted -> {
-                    if (granted) camera.open();
-                    else camStatus.setText("USB webcams need the camera permission (Android 10+).");
+                    if (granted) openCamera();
+                    else camStatus.setText("Cameras need the camera permission.");
                 });
+
+        List<CharSequence> cameras = new ArrayList<>(Arrays.asList(
+                activity.getResources().getTextArray(R.array.camera_types)));
+        if (!BuildConfig.DAHENG) cameras.remove(CAM_DAHENG);
+        ArrayAdapter<CharSequence> cameraItems = new ArrayAdapter<>(
+                activity, android.R.layout.simple_spinner_item, cameras);
+        cameraItems.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        cameraSpinner.setAdapter(cameraItems);
 
         ArrayAdapter<CharSequence> protocols = ArrayAdapter.createFromResource(
                 activity, R.array.stage_protocols, android.R.layout.simple_spinner_item);
@@ -154,10 +173,12 @@ final class ScanTab implements Camera.Listener {
 
     private void wire() {
         preview.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-            @Override public void onSurfaceTextureAvailable(SurfaceTexture st, int w, int h) { camera.setPreview(st); }
+            @Override public void onSurfaceTextureAvailable(SurfaceTexture st, int w, int h) {
+                if (camera != null) camera.setPreview(st);
+            }
             @Override public void onSurfaceTextureSizeChanged(SurfaceTexture st, int w, int h) { }
             @Override public boolean onSurfaceTextureDestroyed(SurfaceTexture st) {
-                camera.setPreview(null);
+                if (camera != null) camera.setPreview(null);
                 return true;
             }
             @Override public void onSurfaceTextureUpdated(SurfaceTexture st) { }
@@ -166,11 +187,12 @@ final class ScanTab implements Camera.Listener {
         activity.findViewById(R.id.btn_camera).setOnClickListener(v -> {
             if (ContextCompat.checkSelfPermission(activity, Manifest.permission.CAMERA)
                     == PackageManager.PERMISSION_GRANTED) {
-                camera.open();
+                openCamera();
             } else {
                 cameraPermission.launch(Manifest.permission.CAMERA);
             }
         });
+        activity.findViewById(R.id.btn_exposure).setOnClickListener(v -> applyExposure());
 
         jog(R.id.btn_scan_x_minus, 'X', -1);
         jog(R.id.btn_scan_x_plus, 'X', 1);
@@ -213,6 +235,58 @@ final class ScanTab implements Camera.Listener {
         activity.findViewById(id).setOnClickListener(v -> {
             double step = sign * num(R.id.et_jog_step, 100);
             onStage(s -> s.moveBy(axis, step));
+        });
+    }
+
+    /** Opens the camera chosen in the spinner, closing another kind first. */
+    private void openCamera() {
+        int type = cameraSpinner.getSelectedItemPosition();
+        if (camera != null && type != cameraType) {
+            camera.close();
+            camera = null;
+        }
+        if (camera == null) {
+            if (type == CAM_PHONE) {
+                camera = new PhoneCamera(activity, this);
+            } else if (type == CAM_DAHENG) {
+                camera = dahengCamera();
+                if (camera == null) return;
+            } else {
+                camera = new UvcCamera(activity.getApplication(), this);
+            }
+            cameraType = type;
+            camera.setPreview(preview.isAvailable() ? preview.getSurfaceTexture() : null);
+        }
+        camera.open();
+    }
+
+    /** DahengCamera is compiled only with Daheng's SDK in app/libs/galaxy, hence by name. */
+    private Camera dahengCamera() {
+        try {
+            return (Camera) Class.forName("com.openuc2.control.DahengCamera")
+                    .getDeclaredConstructor(android.app.Application.class, Camera.Listener.class)
+                    .newInstance(activity.getApplication(), this);
+        } catch (Exception e) {
+            camStatus.setText("This build has no Daheng support: " + message(e));
+            return null;
+        }
+    }
+
+    /** Fixes exposure and gain now, so the live view shows what the tiles will look like. */
+    private void applyExposure() {
+        Camera c = camera;
+        if (c == null || !c.isOpen()) {
+            toast("Connect the camera first");
+            return;
+        }
+        double ms = num(R.id.et_exposure, 10), gain = num(R.id.et_gain, 0);
+        hw.execute(() -> {
+            try {
+                String set = c.setExposure(ms, gain);
+                main.post(() -> camStatus.setText(cameraStatus + "\nFixed: " + set));
+            } catch (Exception e) {
+                main.post(() -> toast("Exposure not set: " + message(e)));
+            }
         });
     }
 
@@ -322,7 +396,8 @@ final class ScanTab implements Camera.Listener {
 
     private void startScan() {
         if (scan != null) return;
-        if (!camera.isOpen()) {
+        Camera c = camera;
+        if (c == null || !c.isOpen()) {
             toast("Connect the camera first");
             return;
         }
@@ -347,6 +422,7 @@ final class ScanTab implements Camera.Listener {
                     .put("step_x_um", stepX).put("step_y_um", stepY).put("overlap", overlap)
                     .put("pattern", check(R.id.cb_snake).isChecked() ? "snake" : "raster")
                     .put("stage", String.valueOf(stageSpinner.getSelectedItem()))
+                    .put("camera", String.valueOf(cameraSpinner.getSelectedItem()))
                     .put("app", "UC2 Control " + BuildConfig.VERSION_NAME);
         } catch (org.json.JSONException e) {
             toast(message(e));
@@ -370,8 +446,8 @@ final class ScanTab implements Camera.Listener {
                 main.post(() -> finished(state, error, plan.size()));
             }
         };
-        scan = new TileScan(s, camera, plan, dir, meta, (long) num(R.id.et_settle, 200),
-                check(R.id.cb_return).isChecked(), listener);
+        scan = new TileScan(s, c, plan, dir, meta, num(R.id.et_exposure, 10), num(R.id.et_gain, 0),
+                (long) num(R.id.et_settle, 200), check(R.id.cb_return).isChecked(), listener);
         lastScanDir = dir;
         scanStartMs = SystemClock.elapsedRealtime();
         map.clearShots();
@@ -392,17 +468,70 @@ final class ScanTab implements Camera.Listener {
 
     private void finished(String state, String error, int total) {
         int done = progress.getProgress();
+        String settings = scan.cameraSettings();
         scan = null;
         setScanning(false);
         String where = "Android/data/" + activity.getPackageName() + "/files/scans/" + lastScanDir.getName();
+        String report;
         if ("error".equals(state)) {
-            scanStatus.setText("Error after " + done + " / " + total + " tiles: " + error
-                    + "\nTiles so far are kept in " + where);
+            report = "Error after " + done + " / " + total + " tiles: " + error
+                    + "\nTiles so far are kept in " + where;
         } else {
-            scanStatus.setText(("done".equals(state) ? "Done: " : "Stopped: ") + done + " / " + total
-                    + " tiles in " + clock(SystemClock.elapsedRealtime() - scanStartMs) + "\n" + where);
+            report = ("done".equals(state) ? "Done: " : "Stopped: ") + done + " / " + total
+                    + " tiles in " + clock(SystemClock.elapsedRealtime() - scanStartMs)
+                    + (settings.isEmpty() ? "" : " · " + settings) + "\n" + where;
         }
+        scanStatus.setText(report);
         showPosition();
+        if (done > 0 && check(R.id.cb_gallery).isChecked()) {
+            File dir = lastScanDir;
+            hw.execute(() -> {
+                String note;
+                try {
+                    int n = copyToGallery(dir);
+                    note = n < 0 ? "Gallery copy needs Android 10 or newer."
+                            : n + " tiles in the gallery: Pictures/UC2 Scans/" + dir.getName();
+                } catch (Exception e) {
+                    note = "Gallery copy failed: " + message(e);
+                }
+                String line = note;
+                main.post(() -> scanStatus.setText(report + "\n" + line));
+            });
+        }
+    }
+
+    /**
+     * Copies the scan's tiles into the gallery, album Pictures/UC2 Scans/<scan>.
+     * Returns how many, or -1 below Android 10.
+     */
+    private int copyToGallery(File dir) throws IOException {
+        // ponytail: MediaStore without any permission is Android 10+; older phones would need
+        // WRITE_EXTERNAL_STORAGE and a media scan.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return -1;
+        File[] files = new File(dir, "tiles").listFiles((d, name) -> name.endsWith(".jpg"));
+        if (files == null) return 0;
+        Arrays.sort(files);
+        ContentResolver resolver = activity.getContentResolver();
+        Uri images = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+        String album = Environment.DIRECTORY_PICTURES + "/UC2 Scans/" + dir.getName();
+        for (File f : files) {
+            ContentValues v = new ContentValues();
+            v.put(MediaStore.Images.Media.DISPLAY_NAME, dir.getName() + "_" + f.getName());
+            v.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+            v.put(MediaStore.Images.Media.RELATIVE_PATH, album);
+            v.put(MediaStore.Images.Media.IS_PENDING, 1);   // hidden until complete
+            Uri uri = resolver.insert(images, v);
+            if (uri == null) throw new IOException("the gallery refused " + f.getName());
+            try (OutputStream out = resolver.openOutputStream(uri);
+                 InputStream in = new FileInputStream(f)) {
+                if (out == null) throw new IOException("cannot write " + uri);
+                copy(in, out);
+            }
+            v.clear();
+            v.put(MediaStore.Images.Media.IS_PENDING, 0);
+            resolver.update(uri, v, null, null);
+        }
+        return files.length;
     }
 
     private void setScanning(boolean on) {
@@ -411,6 +540,8 @@ final class ScanTab implements Camera.Listener {
         for (int id : CHECKS) check(id).setEnabled(!on);
         for (int id : JOG_BUTTONS) activity.findViewById(id).setEnabled(!on);
         stageSpinner.setEnabled(!on);
+        cameraSpinner.setEnabled(!on);
+        activity.findViewById(R.id.btn_exposure).setEnabled(!on);
         map.setEnabled(!on);
         activity.findViewById(R.id.btn_scan_start).setEnabled(!on);
         activity.findViewById(R.id.btn_share).setEnabled(!on);
@@ -501,11 +632,15 @@ final class ScanTab implements Camera.Listener {
             return;
         }
         out.putNextEntry(new ZipEntry(path));
-        byte[] buf = new byte[64 * 1024];
         try (InputStream in = new FileInputStream(file)) {
-            for (int n; (n = in.read(buf)) > 0; ) out.write(buf, 0, n);
+            copy(in, out);
         }
         out.closeEntry();
+    }
+
+    private static void copy(InputStream in, OutputStream out) throws IOException {
+        byte[] buf = new byte[64 * 1024];
+        for (int n; (n = in.read(buf)) > 0; ) out.write(buf, 0, n);
     }
 
     // ======================================================================
@@ -514,6 +649,7 @@ final class ScanTab implements Camera.Listener {
 
     @Override
     public void onCameraState(String status, int width, int height) {
+        cameraStatus = status;
         camStatus.setText(status);
         if (width > 0) {
             preview.setAspectRatio(width, height);
@@ -533,6 +669,7 @@ final class ScanTab implements Camera.Listener {
             if (v != null) field(id).setText(v);
         }
         for (int id : CHECKS) check(id).setChecked(prefs.getBoolean(key(id), check(id).isChecked()));
+        cameraSpinner.setSelection(Math.min(prefs.getInt("camera", CAM_UVC), cameraSpinner.getCount() - 1));
         int type = Math.min(prefs.getInt("stage", 0), STAGE_KEYS.length - 1);
         stageSpinner.setSelection(type);
         loadStageFields(type);
@@ -556,6 +693,7 @@ final class ScanTab implements Camera.Listener {
         for (int id : SCAN_FIELDS) e.putString(key(id), field(id).getText().toString());
         for (int id : CHECKS) e.putBoolean(key(id), check(id).isChecked());
         e.putInt("stage", stageSpinner.getSelectedItemPosition());
+        e.putInt("camera", cameraSpinner.getSelectedItemPosition());
         if (stageType >= 0) {
             for (int id : STAGE_FIELDS) {
                 e.putString(STAGE_KEYS[stageType] + "." + key(id), field(id).getText().toString());
@@ -568,7 +706,7 @@ final class ScanTab implements Camera.Listener {
         save();
         if (scan != null) scan.requestStop();
         hw.shutdown();
-        camera.close();
+        if (camera != null) camera.close();
         serial.setRawListener(null);
     }
 

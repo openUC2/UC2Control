@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -205,17 +206,28 @@ final class UvcCamera implements Camera, IFrameCallback {
     }
 
     @Override
-    public void setAutoExposure(boolean auto) {
+    public String setExposure(double exposureMs, double gain) throws Exception {
+        UVCControl c = helper == null || !open ? null : helper.getUVCControl();
+        if (c == null) throw new IOException("No camera open");
+        // Fully manual: in shutter priority some webcams still float the gain.
+        c.setAutoExposureMode(UVCControl.UVC_AUTO_EXPOSURE_MODE_MANUAL);
+        // UVC counts exposure in 100 µs steps.
+        int exposure = clamp((int) Math.round(exposureMs * 10), c.updateExposureTimeAbsoluteLimit());
+        c.setExposureTimeAbsolute(exposure);
+        int g = clamp((int) Math.round(gain), c.updateGainLimit());
+        c.setGain(g);
         try {
-            UVCControl c = helper == null ? null : helper.getUVCControl();
-            if (c == null) return;
-            int exposure = c.getExposureTimeAbsolute();
-            c.setExposureTimeAuto(auto);
-            // Keep the value auto-exposure had settled on rather than the camera's default.
-            if (!auto && exposure > 0) c.setExposureTimeAbsolute(exposure);
+            c.setWhiteBalanceAuto(false);   // colour must not drift between tiles either
         } catch (Exception ignored) {
-            // not every webcam exposes these controls
+            // not every webcam has it
         }
+        return String.format(Locale.US, "%.1f ms · gain %d", exposure / 10.0, g);
+    }
+
+    /** Clamps to a UVC {min, max, default} limit; unknown limits pass the value through. */
+    private static int clamp(int v, int[] limit) {
+        return limit == null || limit.length < 2 || limit[0] > limit[1]
+                ? v : Math.max(limit[0], Math.min(limit[1], v));
     }
 
     @Override

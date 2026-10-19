@@ -15,6 +15,11 @@ if (keystorePropsFile.exists()) {
 def resolvedStoreFile = keystoreProps.getProperty('storeFile', System.getenv('KEYSTORE_FILE'))
 def hasReleaseSigning = resolvedStoreFile != null && file(resolvedStoreFile).exists()
 
+// Daheng Galaxy SDK. Proprietary and not in git: copy it into app/libs/galaxy
+// (README, "Daheng cameras") and the Daheng camera is built in; without it
+// the build simply has no Daheng option.
+def hasGalaxy = file('libs/galaxy/galaxy-android.jar').exists()
+
 android {
     namespace 'com.openuc2.control'
     compileSdk 34
@@ -27,6 +32,16 @@ android {
         versionCode project.hasProperty('appVersionCode') ? project.appVersionCode.toInteger() : 2
         versionName project.hasProperty('appVersionName') ? project.appVersionName : "2.0"
         vectorDrawables.useSupportLibrary = true
+        buildConfigField 'boolean', 'DAHENG', String.valueOf(hasGalaxy)
+    }
+
+    sourceSets {
+        main {
+            if (hasGalaxy) {
+                java.srcDirs += 'src/daheng/java'
+                jniLibs.srcDirs += 'libs/galaxy/jniLibs'
+            }
+        }
     }
 
     signingConfigs {
@@ -67,6 +82,8 @@ android {
 
     packagingOptions {
         resources.excludes += ['META-INF/*.version', 'META-INF/*.kotlin_module']
+        // Native libraries extracted on install, as Daheng's sample app requires.
+        jniLibs.useLegacyPackaging = true
     }
 
     lint {
@@ -86,6 +103,8 @@ dependencies {
 
     // USB (UVC) webcams without root: libusb + libuvc, prebuilt for all ABIs
     implementation 'com.herohan:UVCAndroid:1.0.13'
+
+    if (hasGalaxy) implementation files('libs/galaxy/galaxy-android.jar')
 
     testImplementation 'junit:junit:4.13.2'
     // android.jar's org.json is a stub on the JVM; the stage tests parse real frames

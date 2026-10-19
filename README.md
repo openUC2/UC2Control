@@ -6,10 +6,12 @@ It covers the hardware control surface of the
 matrix, homing, TMC and CAN setup, and a raw JSON console — without needing a
 laptop in the lab.
 
-The **Scan** tab turns phone + USB webcam + XY stage into a low-cost
-ShitScope: live view, a stage overview you can tap to move, XY(Z) jog, and
-tiled 2D scans saved on the phone in the ShitScope folder layout, ready to
-share to Drive or Dropbox and to stitch on a computer with ImSwitch.
+The **Scan** tab turns phone + camera + XY stage into a low-cost ShitScope:
+live view from a USB webcam, the phone's own camera or a Daheng USB3 camera,
+fixed exposure and gain, a stage overview you can tap to move, XY(Z) jog, and
+tiled 2D scans saved on the phone in the ShitScope folder layout, copied to
+the gallery, ready to share to Drive or Dropbox and to stitch on a computer
+with ImSwitch.
 
 <!-- Screenshots go here once you have a board to point it at. -->
 
@@ -159,7 +161,7 @@ Tabs:
 
 | Tab | What is in it |
 |---|---|
-| **Scan** | USB-webcam live view, stage overview, XY(Z) jog, tile scan, share — see [Tile scanning](#tile-scanning) |
+| **Scan** | Camera live view and exposure, stage overview, XY(Z) jog, tile scan, gallery, share — see [Tile scanning](#tile-scanning) |
 | **Stage** | XYZA jog, continuous motion, per-axis stop, big STOP ALL, motor power |
 | **Light** | 5 laser/LED PWM channels, LED ring and half-field patterns, 8×8 single-LED grid |
 | **Setup** | Homing, TMC driver, CAN address, board queries, connection troubleshooting |
@@ -229,29 +231,39 @@ place of the computer.
 ### Hardware
 
 ```
-phone ── USB-C OTG hub ──┬── USB webcam (any UVC camera)
+phone ── USB-C OTG hub ──┬── camera: USB webcam (UVC) or Daheng USB3 camera
                          └── stage: openUC2 ESP32 board, or the PCB planar stage
 ```
 
-Most phones run a webcam and a serial board through one powered OTG hub. The
-camera alone also works: pick **No stage** to try live view, storage and
-sharing without any stage.
+Most phones run a camera and a serial board through one powered OTG hub. With
+the phone's own camera (through an eyepiece adapter, say) only the stage
+needs USB. A camera alone also works: pick **No stage** to try live view,
+storage and sharing without any stage.
 
 ### Steps
 
 1. **Connect** the stage in the bar at the top (115200 baud for an openUC2
    board, 9600 for the PCB stage), then pick its protocol under **Stage
    hardware** and check µm/step and speed.
-2. Tap **Camera**, allow camera and USB access. The live view opens at the
-   camera's largest mode and fills in the image width and height.
-3. Enter the **pixel size at the sample** (µm). Field of view = width ×
+2. Pick the camera, tap **Connect**, allow camera and USB access. The live
+   view opens at the camera's largest mode and fills in the image width and
+   height.
+3. Set **exposure** (ms) and **gain**, tap **Apply** and check the live view.
+   Every tile is taken with exactly these values, applied again when the scan
+   starts; auto exposure, auto gain and auto white balance are off, and on
+   the phone camera focus is locked where autofocus left it. Gain is ISO on
+   the phone, dB on Daheng and the raw control value on webcams; values are
+   clamped to what the camera supports, and the status line shows what was
+   set.
+4. Enter the **pixel size at the sample** (µm). Field of view = width ×
    height × pixel size; empty steps default to field of view × (1 − overlap).
-4. Jog, or tap the overview, to the middle of the area; set tiles X/Y; the
+5. Jog, or tap the overview, to the middle of the area; set tiles X/Y; the
    outlines on the map show the grid you are about to scan.
-5. **Start scan.** Thumbnails land on the map at their commanded positions;
+6. **Start scan.** Thumbnails land on the map at their commanded positions;
    **Stop** finishes the current tile and keeps everything taken so far.
-   Exposure is locked for the scan so tiles match in brightness.
-6. **Share last scan** zips the folder and opens the share sheet: Drive,
+   Afterwards the tiles are copied to the gallery (untick **Copy the tiles to
+   the gallery** to skip that).
+7. **Share last scan** zips the folder and opens the share sheet: Drive,
    Dropbox, Nextcloud, mail, Nearby Share.
 
 | Protocol | Speaks | Notes |
@@ -269,13 +281,14 @@ moves made from the Stage tab or after a **Stop** are not tracked.
 
 ```
 Android/data/com.openuc2.control/files/scans/20261018_141500/
-    scan.json     pixel size, plan, start position, settings
+    scan.json     pixel size, plan, start position, camera, exposure and gain
     tiles.json    per tile: ix, iy, commanded x/y (µm), stage position, file
-    tiles/tile_0000.jpg …     JPEG quality 95, as delivered by the camera
+    tiles/tile_0000.jpg …     JPEG quality 95, in the orientation of the live view
 ```
 
 This is ImSwitch's ShitScope scan layout. Copy the folder over USB, or share
-the zip.
+the zip. The gallery copy lands in **Pictures/UC2 Scans/<scan>** (Android 10
+and newer; older phones keep only the app folder).
 
 ### Stitching (on the computer)
 
@@ -293,14 +306,36 @@ and writes `scan_quality.json`, `stitched.tif` and, with `--full`,
 `stitched_full.tif` next to the tiles. The overview on the phone places
 tiles at their commanded positions only, like ShitScope's live preview.
 
-### Other cameras (HIK, Daheng)
+### Cameras
 
-The scan only needs `Camera` (`Camera.java`): open, draw a preview into a
-`SurfaceTexture`, return one fresh frame as JPEG, lock exposure. `UvcCamera`
-implements it for webcams. A HIK (MVS) or Daheng (Galaxy) camera needs its
-vendor's Android SDK (`.aar`/`.so`, from the vendor's download page) in
-`app/libs` and a class implementing the same five methods; nothing else in
-the scan changes.
+| Camera | How | Notes |
+|---|---|---|
+| USB webcam | any UVC camera, through [UVCAndroid](https://github.com/shiyinghan/UVCAndroid) (libusb + libuvc, no root) | exposure in 100 µs steps, raw gain |
+| Phone camera | the back camera, Camera2 | full-resolution still capture per tile, ISO as gain; phones without manual exposure lock auto exposure instead. The live view is drawn from a small stream in the sensor's orientation, the same as the saved tiles, so it does not rotate with the phone |
+| Daheng USB3 | Daheng's Galaxy SDK for Android | Android 6+, ARM phones; only in builds with the SDK (below) |
+
+All three implement `Camera.java` (open, preview, fixed exposure and gain,
+one fresh frame as JPEG); a HIK camera would be one more class with
+Hikrobot's Android SDK.
+
+#### Daheng cameras
+
+Daheng's SDK is proprietary, so it is not in this (public) repository. Copy
+it into `app/libs/galaxy/`, which git ignores, and the next build has the
+Daheng camera; CI builds without it simply do not offer it.
+
+```bash
+SDK=~/Downloads/Galaxy_Android-armhf_U3V_32bits-64bits_1.2.2407.9181
+mkdir -p app/libs/galaxy
+cp "$SDK/lib/galaxy-android-source/galaxy-android-source.jar" app/libs/galaxy/galaxy-android.jar
+cp -R "$SDK/lib/galaxy-android-jniLibs/jniLibs" app/libs/galaxy/
+```
+
+SDK 1.2.2407 asks for USB permission with a mutable *implicit*
+`PendingIntent`, which Android 14 refuses from apps targeting it.
+`DahengCamera` catches that and finishes the SDK's own setup with an explicit
+intent, by reflection on that SDK version; if a later SDK changes those
+internals, the status line says so.
 
 ---
 
@@ -350,8 +385,9 @@ app/src/main/
 │   ├── Uc2Stage.java           openUC2 board, UC2-REST JSON, waits for isDone
 │   ├── PcbStage.java           ShitScope PCB stage, ASCII MOVE/BUSY/STOP
 │   ├── SerialLink.java         line-based request/reply over the serial port
-│   ├── Camera.java             camera interface
-│   └── UvcCamera.java          USB webcams (UVCAndroid)
+│   ├── Camera.java             camera interface + preview painter
+│   ├── UvcCamera.java          USB webcams (UVCAndroid)
+│   └── PhoneCamera.java        the phone's own camera (Camera2)
 └── res/
     ├── layout/                 activity_main + one layout per tab
     ├── values/                 colors (brand palette), themes, strings
@@ -359,6 +395,8 @@ app/src/main/
     ├── xml/usb_serial_filter.xml   USB auto-attach filter (decimal ids!)
     └── xml/file_paths.xml      what the share sheet may read (the scans)
 
+app/src/daheng/java/            DahengCamera.java, built only with the Galaxy SDK
+app/libs/galaxy/                Daheng Galaxy SDK (git-ignored, see "Daheng cameras")
 app/src/test/                   protocol, grid and stage tests, no device needed
 tools/stitch_scan.py            register + stitch a phone scan with ImSwitch
 ```

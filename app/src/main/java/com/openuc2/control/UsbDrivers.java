@@ -151,10 +151,12 @@ public final class UsbDrivers {
         }
     }
 
-    /** True for a UVC webcam (any video-class interface). */
+    /** True for a camera: UVC (video class) or USB3 Vision (misc class, subclass 5). */
     public static boolean isCamera(UsbDevice device) {
         for (int i = 0; i < device.getInterfaceCount(); i++) {
-            if (device.getInterface(i).getInterfaceClass() == UsbConstants.USB_CLASS_VIDEO) return true;
+            UsbInterface itf = device.getInterface(i);
+            if (itf.getInterfaceClass() == UsbConstants.USB_CLASS_VIDEO) return true;
+            if (itf.getInterfaceClass() == UsbConstants.USB_CLASS_MISC && itf.getInterfaceSubclass() == 5) return true;
         }
         return false;
     }

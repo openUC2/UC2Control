@@ -85,18 +85,22 @@ final class TileScan implements Runnable {
     private final Camera camera;
     private final List<Tile> plan;
     private final JSONObject meta;
+    private final double exposureMs, gain;
     private final long settleMs;
     private final boolean returnToStart;
     private final Listener listener;
     private volatile boolean stopRequested;
+    private volatile String cameraSettings = "";
 
     TileScan(Stage stage, Camera camera, List<Tile> plan, File dir, JSONObject meta,
-             long settleMs, boolean returnToStart, Listener listener) {
+             double exposureMs, double gain, long settleMs, boolean returnToStart, Listener listener) {
         this.stage = stage;
         this.camera = camera;
         this.plan = plan;
         this.dir = dir;
         this.meta = meta;
+        this.exposureMs = exposureMs;
+        this.gain = gain;
         this.settleMs = settleMs;
         this.returnToStart = returnToStart;
         this.listener = listener;
@@ -105,6 +109,11 @@ final class TileScan implements Runnable {
     /** Stops after the current tile; the tiles taken so far are kept. */
     void requestStop() {
         stopRequested = true;
+    }
+
+    /** What the camera made of the exposure and gain asked for, once the scan has started. */
+    String cameraSettings() {
+        return cameraSettings;
     }
 
     @Override
@@ -116,14 +125,16 @@ final class TileScan implements Runnable {
             File tiles = new File(dir, "tiles");
             if (!tiles.mkdirs() && !tiles.isDirectory()) throw new IOException("Cannot create " + tiles);
 
+            // The same exposure and gain for every tile, whatever the live view did before.
+            cameraSettings = camera.setExposure(exposureMs, gain);
             JSONArray planJson = new JSONArray();
             for (Tile t : plan) planJson.put(t.json());
             meta.put("plan", planJson)
                 .put("start", new JSONObject().put("X", start[0]).put("Y", start[1]))
+                .put("exposure_ms", exposureMs).put("gain", gain).put("camera_settings", cameraSettings)
                 .put("time", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(new Date()));
             write("scan.json", meta.toString(1).getBytes(StandardCharsets.UTF_8));
 
-            camera.setAutoExposure(false);
             long indexed = 0;
             for (int k = 0; k < plan.size(); k++) {
                 if (stopRequested) {
@@ -158,7 +169,6 @@ final class TileScan implements Runnable {
                 // the disk is the problem; the tile files are still there
             }
         } finally {
-            camera.setAutoExposure(true);
             stage.idle();
             listener.onFinished(state, error);
         }

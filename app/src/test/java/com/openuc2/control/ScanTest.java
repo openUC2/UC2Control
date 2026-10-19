@@ -78,17 +78,21 @@ public class ScanTest {
     /** "Frames" that say where the stage was, so a tile can be checked against its position. */
     private static class FakeCamera implements Camera {
         final Stage stage;
-        Boolean autoExposure;
+        String exposure;   // set by setExposure, required before any grab
 
         FakeCamera(Stage stage) { this.stage = stage; }
 
         @Override public void open() { }
         @Override public void setPreview(SurfaceTexture surface) { }
         @Override public byte[] grabJpeg(long timeoutMs) throws Exception {
+            if (exposure == null) throw new IllegalStateException("grab before the exposure was fixed");
             double[] p = stage.position();
             return (p[0] + "," + p[1]).getBytes(StandardCharsets.UTF_8);
         }
-        @Override public void setAutoExposure(boolean auto) { autoExposure = auto; }
+        @Override public String setExposure(double exposureMs, double gain) {
+            exposure = exposureMs + " ms, gain " + gain;
+            return exposure;
+        }
         @Override public boolean isOpen() { return true; }
         @Override public void close() { }
     }
@@ -101,7 +105,7 @@ public class ScanTest {
         List<String> events = new ArrayList<>();
         scan[0] = new TileScan(stage, new FakeCamera(stage),
                 TileScan.grid(10, 20, 2, 2, 100, 50, false, true), dir,
-                new JSONObject().put("um_per_px", 0.5), 0, true, new TileScan.Listener() {
+                new JSONObject().put("um_per_px", 0.5), 12.5, 3, 0, true, new TileScan.Listener() {
                     @Override public void onTile(int k, TileScan.Tile t, byte[] jpeg) {
                         events.add("tile " + k);
                         if (k + 1 == stopAfter) scan[0].requestStop();
@@ -126,6 +130,8 @@ public class ScanTest {
         assertEquals(0.5, meta.getDouble("um_per_px"), 0);
         assertEquals(4, meta.getJSONArray("plan").length());
         assertEquals(10, meta.getJSONObject("start").getDouble("X"), 0);
+        assertEquals(12.5, meta.getDouble("exposure_ms"), 0);   // fixed once, for every tile
+        assertEquals("12.5 ms, gain 3.0", meta.getString("camera_settings"));
         JSONArray tiles = new JSONArray(read(new File(dir, "tiles.json")));
         assertEquals(4, tiles.length());
         for (int k = 0; k < 4; k++) {
@@ -142,7 +148,7 @@ public class ScanTest {
     }
 
     @Test
-    public void stopKeepsTheTilesTakenAndHandsExposureBack() throws Exception {
+    public void stopKeepsTheTilesTaken() throws Exception {
         File dir = new File(tmp.getRoot(), "scan");
         Stage stage = new Stage.Virtual(new double[3]);
         TileScan[] scan = new TileScan[1];
@@ -161,12 +167,11 @@ public class ScanTest {
         };
         List<String> events = new ArrayList<>();
         new TileScan(stage, broken, TileScan.grid(0, 0, 2, 1, 1, 1, false, false), tmp.getRoot(),
-                new JSONObject(), 0, true, new TileScan.Listener() {
+                new JSONObject(), 10, 0, 0, true, new TileScan.Listener() {
                     @Override public void onTile(int k, TileScan.Tile t, byte[] jpeg) { events.add("tile"); }
                     @Override public void onFinished(String state, String error) { events.add(state + ": " + error); }
                 }).run();
         assertEquals(Arrays.asList("error: Camera delivered no frame"), events);
-        assertEquals(Boolean.TRUE, broken.autoExposure);   // locked for the scan, handed back after
     }
 
     // ---- PCB stage ---------------------------------------------------------
