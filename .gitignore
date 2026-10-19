@@ -24,6 +24,3 @@ keystore.properties
 
 # macOS
 .DS_Store
-/app/build
-/app/build
-/app/build/intermediates
