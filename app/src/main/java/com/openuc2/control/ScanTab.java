@@ -86,8 +86,8 @@ final class ScanTab implements Camera.Listener {
             R.id.et_jog_step, R.id.et_exposure, R.id.et_gain};
     private static final int[] CHECKS = {R.id.cb_snake, R.id.cb_centred, R.id.cb_return,
             R.id.cb_gallery, R.id.cb_flip_x, R.id.cb_flip_y};
-    /** Camera choices, in the order of R.array.camera_types; Daheng only when its SDK was built in. */
-    private static final int CAM_UVC = 0, CAM_PHONE = 1, CAM_DAHENG = 2;
+    /** Camera types, in the order of R.array.camera_types; Daheng and HIK only when their SDKs were built in. */
+    private static final int CAM_UVC = 0, CAM_PHONE = 1, CAM_DAHENG = 2, CAM_HIK = 3;
     private static final int[] JOG_BUTTONS = {R.id.btn_scan_x_minus, R.id.btn_scan_x_plus,
             R.id.btn_scan_y_minus, R.id.btn_scan_y_plus, R.id.btn_scan_z_minus, R.id.btn_scan_z_plus};
     private static final int MAX_TILES_PER_AXIS = 200;
@@ -112,6 +112,7 @@ final class ScanTab implements Camera.Listener {
 
     private Camera camera;
     private int cameraType = -1;
+    private final List<Integer> cameraTypes = new ArrayList<>();   // per camera spinner item
     private String cameraStatus = "";
     private Stage stage;
     private String stageKey = "";
@@ -148,9 +149,13 @@ final class ScanTab implements Camera.Listener {
                     else camStatus.setText("Cameras need the camera permission.");
                 });
 
-        List<CharSequence> cameras = new ArrayList<>(Arrays.asList(
-                activity.getResources().getTextArray(R.array.camera_types)));
-        if (!BuildConfig.DAHENG) cameras.remove(CAM_DAHENG);
+        CharSequence[] names = activity.getResources().getTextArray(R.array.camera_types);
+        List<CharSequence> cameras = new ArrayList<>();
+        for (int t = 0; t < names.length; t++) {
+            if (t == CAM_DAHENG && !BuildConfig.DAHENG || t == CAM_HIK && !BuildConfig.HIK) continue;
+            cameraTypes.add(t);
+            cameras.add(names[t]);
+        }
         ArrayAdapter<CharSequence> cameraItems = new ArrayAdapter<>(
                 activity, android.R.layout.simple_spinner_item, cameras);
         cameraItems.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -240,7 +245,7 @@ final class ScanTab implements Camera.Listener {
 
     /** Opens the camera chosen in the spinner, closing another kind first. */
     private void openCamera() {
-        int type = cameraSpinner.getSelectedItemPosition();
+        int type = cameraTypes.get(cameraSpinner.getSelectedItemPosition());
         if (camera != null && type != cameraType) {
             camera.close();
             camera = null;
@@ -248,8 +253,8 @@ final class ScanTab implements Camera.Listener {
         if (camera == null) {
             if (type == CAM_PHONE) {
                 camera = new PhoneCamera(activity, this);
-            } else if (type == CAM_DAHENG) {
-                camera = dahengCamera();
+            } else if (type == CAM_DAHENG || type == CAM_HIK) {
+                camera = sdkCamera(type == CAM_DAHENG ? "DahengCamera" : "HikCamera");
                 if (camera == null) return;
             } else {
                 camera = new UvcCamera(activity.getApplication(), this);
@@ -260,14 +265,14 @@ final class ScanTab implements Camera.Listener {
         camera.open();
     }
 
-    /** DahengCamera is compiled only with Daheng's SDK in app/libs/galaxy, hence by name. */
-    private Camera dahengCamera() {
+    /** DahengCamera and HikCamera are compiled only with their vendor's SDK in app/libs, hence by name. */
+    private Camera sdkCamera(String name) {
         try {
-            return (Camera) Class.forName("com.openuc2.control.DahengCamera")
+            return (Camera) Class.forName("com.openuc2.control." + name)
                     .getDeclaredConstructor(android.app.Application.class, Camera.Listener.class)
                     .newInstance(activity.getApplication(), this);
         } catch (Exception e) {
-            camStatus.setText("This build has no Daheng support: " + message(e));
+            camStatus.setText("This build has no " + name + ": " + message(e));
             return null;
         }
     }
@@ -669,7 +674,7 @@ final class ScanTab implements Camera.Listener {
             if (v != null) field(id).setText(v);
         }
         for (int id : CHECKS) check(id).setChecked(prefs.getBoolean(key(id), check(id).isChecked()));
-        cameraSpinner.setSelection(Math.min(prefs.getInt("camera", CAM_UVC), cameraSpinner.getCount() - 1));
+        cameraSpinner.setSelection(Math.max(0, cameraTypes.indexOf(prefs.getInt("camera", CAM_UVC))));
         int type = Math.min(prefs.getInt("stage", 0), STAGE_KEYS.length - 1);
         stageSpinner.setSelection(type);
         loadStageFields(type);
@@ -693,7 +698,7 @@ final class ScanTab implements Camera.Listener {
         for (int id : SCAN_FIELDS) e.putString(key(id), field(id).getText().toString());
         for (int id : CHECKS) e.putBoolean(key(id), check(id).isChecked());
         e.putInt("stage", stageSpinner.getSelectedItemPosition());
-        e.putInt("camera", cameraSpinner.getSelectedItemPosition());
+        e.putInt("camera", cameraTypes.get(cameraSpinner.getSelectedItemPosition()));   // the type: items differ per build
         if (stageType >= 0) {
             for (int id : STAGE_FIELDS) {
                 e.putString(STAGE_KEYS[stageType] + "." + key(id), field(id).getText().toString());

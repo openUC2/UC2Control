@@ -19,6 +19,9 @@ def hasReleaseSigning = resolvedStoreFile != null && file(resolvedStoreFile).exi
 // (README, "Daheng cameras") and the Daheng camera is built in; without it
 // the build simply has no Daheng option.
 def hasGalaxy = file('libs/galaxy/galaxy-android.jar').exists()
+// Hikrobot's MvCamCtrl SDK, likewise: its libs folder copied to app/libs/hik
+// (README, "HIK cameras") builds the HIK camera in.
+def hasHik = file('libs/hik/MvCameraControl.jar').exists()
 
 android {
     namespace 'com.openuc2.control'
@@ -33,6 +36,7 @@ android {
         versionName project.hasProperty('appVersionName') ? project.appVersionName : "2.0"
         vectorDrawables.useSupportLibrary = true
         buildConfigField 'boolean', 'DAHENG', String.valueOf(hasGalaxy)
+        buildConfigField 'boolean', 'HIK', String.valueOf(hasHik)
     }
 
     sourceSets {
@@ -40,6 +44,10 @@ android {
             if (hasGalaxy) {
                 java.srcDirs += 'src/daheng/java'
                 jniLibs.srcDirs += 'libs/galaxy/jniLibs'
+            }
+            if (hasHik) {
+                java.srcDirs += 'src/hik/java'
+                jniLibs.srcDirs += 'libs/hik'   // its arm64-v8a and armeabi-v7a folders
             }
         }
     }
@@ -82,7 +90,8 @@ android {
 
     packagingOptions {
         resources.excludes += ['META-INF/*.version', 'META-INF/*.kotlin_module']
-        // Native libraries extracted on install, as Daheng's sample app requires.
+        // Native libraries extracted on install, as Daheng's sample app requires;
+        // HIK's SDK also loads its USB layer from the folder it sits in.
         jniLibs.useLegacyPackaging = true
     }
 
@@ -105,6 +114,7 @@ dependencies {
     implementation 'com.herohan:UVCAndroid:1.0.13'
 
     if (hasGalaxy) implementation files('libs/galaxy/galaxy-android.jar')
+    if (hasHik) implementation files('libs/hik/MvCameraControl.jar')
 
     testImplementation 'junit:junit:4.13.2'
     // android.jar's org.json is a stub on the JVM; the stage tests parse real frames

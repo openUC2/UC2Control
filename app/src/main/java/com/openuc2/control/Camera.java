@@ -14,9 +14,9 @@ import android.view.Surface;
  * as JPEG.
  *
  * Implementations: {@link UvcCamera} (any USB webcam), {@link PhoneCamera}
- * (the phone's own camera) and DahengCamera (Daheng USB3 cameras, built
- * only when Daheng's SDK is in app/libs/galaxy). A HIK backend would
- * implement the same methods with Hikrobot's SDK.
+ * (the phone's own camera), DahengCamera (Daheng USB3 cameras, built
+ * only when Daheng's SDK is in app/libs/galaxy) and HikCamera (HIK USB3
+ * cameras, built only when Hikrobot's SDK is in app/libs/hik).
  */
 public interface Camera {
 
@@ -39,9 +39,9 @@ public interface Camera {
     /**
      * Fixed exposure time and gain from now on, automatic modes off, so all
      * tiles of a scan are taken alike. Gain is in the camera's own unit: ISO
-     * on the phone, dB on Daheng, the raw control value on webcams; both are
-     * clamped to what the camera supports. Returns what was set, for the
-     * status line. Hardware thread.
+     * on the phone, dB on Daheng and HIK, the raw control value on webcams;
+     * both are clamped to what the camera supports. Returns what was set, for
+     * the status line. Hardware thread.
      */
     String setExposure(double exposureMs, double gain) throws Exception;
 

@@ -3,4 +3,7 @@
 <paths>
     <external-files-path name="scans" path="scans/" />
     <files-path name="scans_internal" path="scans/" />
+    <!-- ODMR exports before Android 10 (later ones go to Downloads/UC2 ODMR). -->
+    <external-files-path name="odmr" path="odmr/" />
+    <files-path name="odmr_internal" path="odmr/" />
 </paths>

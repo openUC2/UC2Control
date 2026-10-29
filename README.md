@@ -7,11 +7,17 @@ matrix, homing, TMC and CAN setup, and a raw JSON console — without needing a
 laptop in the lab.
 
 The **Scan** tab turns phone + camera + XY stage into a low-cost ShitScope:
-live view from a USB webcam, the phone's own camera or a Daheng USB3 camera,
-fixed exposure and gain, a stage overview you can tap to move, XY(Z) jog, and
+live view from a USB webcam, the phone's own camera or a Daheng or HIK USB3
+camera, fixed exposure and gain, a stage overview you can tap to move, XY(Z) jog, and
 tiled 2D scans saved on the phone in the ShitScope folder layout, copied to
 the gallery, ready to share to Drive or Dropbox and to stitch on a computer
 with ImSwitch.
+
+The **ODMR** tab is the openUC2 qBOX
+[NV-centre ODMR WebSerial app](https://youseetoo.github.io/odmr), the same page
+as in the browser, talking to the ODMR board (XIAO ESP32-C3/S3) over this
+app's USB connection: frequency sweeps, live monitor, B-field ratio, alignment,
+CSV/PNG export into `Download/UC2 ODMR/` and the share sheet.
 
 <!-- Screenshots go here once you have a board to point it at. -->
 
@@ -162,6 +168,7 @@ Tabs:
 | Tab | What is in it |
 |---|---|
 | **Scan** | Camera live view and exposure, stage overview, XY(Z) jog, tile scan, gallery, share — see [Tile scanning](#tile-scanning) |
+| **ODMR** | qBOX NV-centre ODMR experiment — see [ODMR](#odmr-qbox) |
 | **Stage** | XYZA jog, continuous motion, per-axis stop, big STOP ALL, motor power |
 | **Light** | 5 laser/LED PWM channels, LED ring and half-field patterns, 8×8 single-LED grid |
 | **Setup** | Homing, TMC driver, CAN address, board queries, connection troubleshooting |
@@ -231,7 +238,7 @@ place of the computer.
 ### Hardware
 
 ```
-phone ── USB-C OTG hub ──┬── camera: USB webcam (UVC) or Daheng USB3 camera
+phone ── USB-C OTG hub ──┬── camera: USB webcam (UVC), Daheng or HIK USB3 camera
                          └── stage: openUC2 ESP32 board, or the PCB planar stage
 ```
 
@@ -252,9 +259,9 @@ storage and sharing without any stage.
    Every tile is taken with exactly these values, applied again when the scan
    starts; auto exposure, auto gain and auto white balance are off, and on
    the phone camera focus is locked where autofocus left it. Gain is ISO on
-   the phone, dB on Daheng and the raw control value on webcams; values are
-   clamped to what the camera supports, and the status line shows what was
-   set.
+   the phone, dB on Daheng and HIK, and the raw control value on webcams;
+   values are clamped to what the camera supports, and the status line shows
+   what was set.
 4. Enter the **pixel size at the sample** (µm). Field of view = width ×
    height × pixel size; empty steps default to field of view × (1 − overlap).
 5. Jog, or tap the overview, to the middle of the area; set tiles X/Y; the
@@ -313,10 +320,10 @@ tiles at their commanded positions only, like ShitScope's live preview.
 | USB webcam | any UVC camera, through [UVCAndroid](https://github.com/shiyinghan/UVCAndroid) (libusb + libuvc, no root) | exposure in 100 µs steps, raw gain |
 | Phone camera | the back camera, Camera2 | full-resolution still capture per tile, ISO as gain; phones without manual exposure lock auto exposure instead. The live view is drawn from a small stream in the sensor's orientation, the same as the saved tiles, so it does not rotate with the phone |
 | Daheng USB3 | Daheng's Galaxy SDK for Android | Android 6+, ARM phones; only in builds with the SDK (below) |
+| HIK USB3 | Hikrobot's MvCamCtrl SDK for Android | ARM, **rooted** phones or boards only; only in builds with the SDK (below) |
 
-All three implement `Camera.java` (open, preview, fixed exposure and gain,
-one fresh frame as JPEG); a HIK camera would be one more class with
-Hikrobot's Android SDK.
+All four implement `Camera.java` (open, preview, fixed exposure and gain,
+one fresh frame as JPEG).
 
 #### Daheng cameras
 
@@ -336,6 +343,58 @@ SDK 1.2.2407 asks for USB permission with a mutable *implicit*
 `DahengCamera` catches that and finishes the SDK's own setup with an explicit
 intent, by reflection on that SDK version; if a later SDK changes those
 internals, the status line says so.
+
+#### HIK cameras
+
+Hikrobot's SDK is proprietary as well. It comes with Hikrobot's MVS for
+Android (download centre, "Machine Vision Software MVS V1.0.0 (Android)"):
+copy the `libs` folder of `SDK_MVCamCtrl_Android_V1.0.3.zip` to
+`app/libs/hik/`, which git ignores, and the next build has the HIK camera.
+
+```bash
+SDK=~/Downloads/MVS_STD_1.0.0_221024/SDK_MVCamCtrl_Android_V1.0.3.zip
+unzip -q "$SDK" 'libs/*' -d /tmp/hik
+cp -R /tmp/hik/libs app/libs/hik
+```
+
+That SDK finds and opens cameras through `/dev/bus/usb` itself instead of
+asking Android, which a stock phone does not allow: there it finds no camera.
+Hikrobot built it for their RK3399/RK3128 boards (Android 7.1); their FAQ
+makes the USB device files writable as root, again after each plug-in:
+
+```bash
+adb shell su -c 'chmod -R 777 /dev/bus/usb'
+```
+
+On a phone with SELinux enforcing even that may not be enough. Webcams, the
+phone camera and Daheng cameras need no root.
+
+---
+
+## ODMR (qBOX)
+
+The ODMR tab runs the
+[ODMR WebSerial app](https://github.com/openUC2/TechnicalDocs-openUC2-QBox/tree/main/Production_Files/Software/ODMR_Server/webserial-app)
+unchanged in a WebView, so phone and browser look and work alike:
+
+1. Flash the ODMR firmware from the [openUC2 web flasher](https://youseetoo.github.io)
+   (category qBOX → *ODMR server*).
+2. Plug the board in, open the **ODMR** tab and tap **Connect device** (115200 baud,
+   the board's native USB — no driver needed).
+3. Sweep, monitor, align. **CSV ↓** / **PNG ↓** save to `Download/UC2 ODMR/`
+   (Android 10+, otherwise the app's own folder); the message that follows has
+   **Share**.
+
+The webapp's serial commands are in the firmware's
+[SERIAL_PROTOCOL.md](https://github.com/openUC2/TechnicalDocs-openUC2-QBox/blob/main/Production_Files/Software/ODMR_Server/SERIAL_PROTOCOL.md).
+`assets/uc2-bridge.js` gives the page `navigator.serial` on top of the app's USB
+port and hands its downloads to `OdmrTab.java`.
+
+To bring in a newer webapp:
+
+```bash
+tools/sync_odmr_webapp.sh /path/to/TechnicalDocs-openUC2-QBox/Production_Files/Software/ODMR_Server/webserial-app
+```
 
 ---
 
@@ -378,6 +437,7 @@ app/src/main/
 │   ├── UsbDrivers.java         probe table, forced drivers, USB diagnostics
 │   ├── UC2Commands.java        JSON command builders
 │   ├── ConsoleBuffer.java      bounded, colourised console
+│   ├── OdmrTab.java            ODMR tab: the ODMR webapp in a WebView, saving, sharing
 │   ├── ScanTab.java            Scan tab: wiring, settings, scan start/stop, share
 │   ├── TileScan.java           scan grid + the scan loop, ShitScope folder layout
 │   ├── StageMapView.java       stage overview: plan, thumbnails, field of view, tap
@@ -388,6 +448,8 @@ app/src/main/
 │   ├── Camera.java             camera interface + preview painter
 │   ├── UvcCamera.java          USB webcams (UVCAndroid)
 │   └── PhoneCamera.java        the phone's own camera (Camera2)
+├── assets/odmr/                ODMR WebSerial app (copy, tools/sync_odmr_webapp.sh)
+├── assets/uc2-bridge.js        navigator.serial + downloads for the ODMR webapp
 └── res/
     ├── layout/                 activity_main + one layout per tab
     ├── values/                 colors (brand palette), themes, strings
@@ -397,8 +459,11 @@ app/src/main/
 
 app/src/daheng/java/            DahengCamera.java, built only with the Galaxy SDK
 app/libs/galaxy/                Daheng Galaxy SDK (git-ignored, see "Daheng cameras")
+app/src/hik/java/               HikCamera.java, built only with Hikrobot's SDK
+app/libs/hik/                   Hikrobot MvCamCtrl SDK (git-ignored, see "HIK cameras")
 app/src/test/                   protocol, grid and stage tests, no device needed
 tools/stitch_scan.py            register + stitch a phone scan with ImSwitch
+tools/sync_odmr_webapp.sh       copy the ODMR webapp into assets/odmr
 ```
 
 ---
