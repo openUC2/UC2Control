@@ -125,7 +125,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/surface"
-        app:tabMode="fixed"
+        app:tabMode="auto"
         app:tabGravity="fill"
         app:tabIndicatorColor="@color/go"
         app:tabIndicatorHeight="3dp"
@@ -145,6 +145,8 @@
         android:layout_height="0dp"
         android:layout_weight="1">
 
+        <include layout="@layout/tab_scan" />
+        <include layout="@layout/tab_odmr" />
         <include layout="@layout/tab_stage" />
         <include layout="@layout/tab_light" />
         <include layout="@layout/tab_setup" />

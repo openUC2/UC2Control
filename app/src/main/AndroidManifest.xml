@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!--
       required="false" on purpose. Some phones support OTG perfectly well but do
@@ -7,7 +8,21 @@
       simply not installable on them. The app checks at runtime instead and says
       so plainly in Diagnostics.
     -->
-    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
+    <uses-feature android:name="android.hardware.usb.host" android:required="false"
+        tools:replace="android:required" />
+
+    <!-- USB webcams: Android 10+ grants USB access to a video device only to
+         apps holding CAMERA. No built-in camera needed. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <!-- UVCAndroid declares these for its recorder; this app records nothing and
+         keeps scans in its own folder, so none of them is asked for. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove" />
 
     <application
         android:allowBackup="true"
@@ -32,9 +47,22 @@
             <intent-filter>
                 <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
             </intent-filter>
+            <!-- Not "device_filter": UVCAndroid reads @xml/device_filter to find
+                 webcams, and an app resource of that name would replace it. -->
             <meta-data
                 android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
-                android:resource="@xml/device_filter" />
+                android:resource="@xml/usb_serial_filter" />
         </activity>
+
+        <!-- Hands zipped scans to the share sheet (Drive, Dropbox, …). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest>

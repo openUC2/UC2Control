@@ -78,6 +78,22 @@ public final class UC2Commands {
                 stepperId, position, speed);
     }
 
+    /**
+     * Relative move of several steppers in one command, accelerated, tagged
+     * with {@code qid} so the board's per-axis "isDone" replies can be matched
+     * to it. Used by the tile scan ({@link Uc2Stage}).
+     */
+    public static String motorMove(int[] stepperIds, long[] steps, int speed, int accel, int qid) {
+        StringBuilder sb = new StringBuilder("{\"task\":\"/motor_act\",\"motor\":{\"steppers\":[");
+        for (int i = 0; i < stepperIds.length; i++) {
+            if (i > 0) sb.append(',');
+            sb.append(String.format(Locale.US,
+                    "{\"stepperid\":%d,\"position\":%d,\"speed\":%d,\"isabs\":0," +
+                    "\"isaccel\":1,\"accel\":%d}", stepperIds[i], steps[i], speed, accel));
+        }
+        return sb.append("]},\"qid\":").append(qid).append('}').toString();
+    }
+
     /** Run until stopped. Negative speed reverses direction. */
     public static String motorForever(int stepperId, int speed) {
         return String.format(Locale.US,

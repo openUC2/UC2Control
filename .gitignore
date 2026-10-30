@@ -24,3 +24,9 @@ keystore.properties
 
 # macOS
 .DS_Store
+
+# Daheng Galaxy SDK: proprietary, copied in by hand (README, "Daheng cameras")
+app/libs/galaxy/
+
+# Hikrobot MvCamCtrl SDK for Android: proprietary, copied in by hand (README, "HIK cameras")
+app/libs/hik/

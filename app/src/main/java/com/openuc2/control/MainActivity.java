@@ -37,6 +37,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialManager.
     private static final int LED_GRID_SIZE = 64;
 
     private UsbSerialManager serial;
+    private ScanTab scanTab;
+    private OdmrTab odmrTab;
     private final ConsoleBuffer console = new ConsoleBuffer();
 
     // Header / connection
@@ -90,6 +92,11 @@ public class MainActivity extends AppCompatActivity implements UsbSerialManager.
         setupLight();
         setupSetup();
         setupConsole();
+        // Received lines for the Scan tab's stages and the ODMR tab (one board at a time)
+        SerialLink link = new SerialLink(serial);
+        serial.setRawListener(link);
+        scanTab = new ScanTab(this, serial, link);
+        odmrTab = new OdmrTab(this, link);
 
         setUiEnabled(false);
         printBanner();
@@ -105,7 +112,15 @@ public class MainActivity extends AppCompatActivity implements UsbSerialManager.
     }
 
     @Override
+    protected void onPause() {
+        scanTab.save();
+        super.onPause();
+    }
+
+    @Override
     protected void onDestroy() {
+        if (scanTab != null) scanTab.release();
+        if (odmrTab != null) odmrTab.release();
         if (serial != null) serial.release();
         super.onDestroy();
     }
@@ -169,6 +184,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialManager.
         baudSpinner   = findViewById(R.id.spinner_baud);
 
         tabPages = new View[]{
+                findViewById(R.id.tab_content_scan),
+                findViewById(R.id.tab_content_odmr),
                 findViewById(R.id.tab_content_stage),
                 findViewById(R.id.tab_content_light),
                 findViewById(R.id.tab_content_setup),
@@ -186,7 +203,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialManager.
 
     private void setupTabs() {
         TabLayout tabs = findViewById(R.id.tabs);
-        int[] titles = {R.string.tab_stage, R.string.tab_light,
+        int[] titles = {R.string.tab_scan, R.string.tab_odmr, R.string.tab_stage, R.string.tab_light,
                         R.string.tab_setup, R.string.tab_console};
         for (int t : titles) tabs.addTab(tabs.newTab().setText(t));
 
@@ -202,6 +219,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialManager.
         for (int i = 0; i < tabPages.length; i++) {
             tabPages[i].setVisibility(i == index ? View.VISIBLE : View.GONE);
         }
+        if (tabPages[index].getId() == R.id.tab_content_odmr) odmrTab.show();
     }
 
     // ======================================================================
@@ -584,7 +602,12 @@ public class MainActivity extends AppCompatActivity implements UsbSerialManager.
      * old build drift out of sync with the layout.
      */
     private void setUiEnabled(boolean connected) {
-        for (View page : tabPages) setEnabledRecursive(page, connected);
+        for (View page : tabPages) {
+            // Scan works without a board (camera only); ODMR has its own connect button.
+            if (page.getId() != R.id.tab_content_scan && page.getId() != R.id.tab_content_odmr) {
+                setEnabledRecursive(page, connected);
+            }
+        }
         for (int id : ALWAYS_ENABLED) {
             View v = findViewById(id);
             if (v != null) v.setEnabled(true);
@@ -671,6 +694,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialManager.
                 connectBtn.setText(R.string.disconnect);
                 connectBtn.setEnabled(true);
                 setUiEnabled(true);
+                odmrTab.onConnected(true);
                 break;
             case CONNECTING:
                 statusText.setText(getString(R.string.status_connecting,
@@ -689,6 +713,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialManager.
                 connectBtn.setText(R.string.connect);
                 connectBtn.setEnabled(true);
                 setUiEnabled(false);
+                odmrTab.onConnected(false);
                 break;
         }
     }

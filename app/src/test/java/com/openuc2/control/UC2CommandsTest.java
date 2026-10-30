@@ -65,6 +65,17 @@ public class UC2CommandsTest {
     }
 
     @Test
+    public void motorMoveMatchesFirmwareExample() {
+        // FocusMotor/MotorJsonParser example: relative, accelerated, with a qid.
+        assertEquals(
+                "{\"task\":\"/motor_act\",\"motor\":{\"steppers\":["
+                        + "{\"stepperid\":1,\"position\":10000,\"speed\":20000,\"isabs\":0,\"isaccel\":1,\"accel\":100000},"
+                        + "{\"stepperid\":2,\"position\":-5,\"speed\":20000,\"isabs\":0,\"isaccel\":1,\"accel\":100000}"
+                        + "]},\"qid\":5}",
+                UC2Commands.motorMove(new int[]{1, 2}, new long[]{10000, -5}, 20000, 100000, 5));
+    }
+
+    @Test
     public void stopAllCoversEveryAxis() {
         String[] all = UC2Commands.motorStopAll();
         assertEquals(4, all.length);

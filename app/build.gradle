@@ -15,6 +15,14 @@ if (keystorePropsFile.exists()) {
 def resolvedStoreFile = keystoreProps.getProperty('storeFile', System.getenv('KEYSTORE_FILE'))
 def hasReleaseSigning = resolvedStoreFile != null && file(resolvedStoreFile).exists()
 
+// Daheng Galaxy SDK. Proprietary and not in git: copy it into app/libs/galaxy
+// (README, "Daheng cameras") and the Daheng camera is built in; without it
+// the build simply has no Daheng option.
+def hasGalaxy = file('libs/galaxy/galaxy-android.jar').exists()
+// Hikrobot's MvCamCtrl SDK, likewise: its libs folder copied to app/libs/hik
+// (README, "HIK cameras") builds the HIK camera in.
+def hasHik = file('libs/hik/MvCameraControl.jar').exists()
+
 android {
     namespace 'com.openuc2.control'
     compileSdk 34
@@ -27,6 +35,21 @@ android {
         versionCode project.hasProperty('appVersionCode') ? project.appVersionCode.toInteger() : 2
         versionName project.hasProperty('appVersionName') ? project.appVersionName : "2.0"
         vectorDrawables.useSupportLibrary = true
+        buildConfigField 'boolean', 'DAHENG', String.valueOf(hasGalaxy)
+        buildConfigField 'boolean', 'HIK', String.valueOf(hasHik)
+    }
+
+    sourceSets {
+        main {
+            if (hasGalaxy) {
+                java.srcDirs += 'src/daheng/java'
+                jniLibs.srcDirs += 'libs/galaxy/jniLibs'
+            }
+            if (hasHik) {
+                java.srcDirs += 'src/hik/java'
+                jniLibs.srcDirs += 'libs/hik'   // its arm64-v8a and armeabi-v7a folders
+            }
+        }
     }
 
     signingConfigs {
@@ -67,6 +90,9 @@ android {
 
     packagingOptions {
         resources.excludes += ['META-INF/*.version', 'META-INF/*.kotlin_module']
+        // Native libraries extracted on install, as Daheng's sample app requires;
+        // HIK's SDK also loads its USB layer from the folder it sits in.
+        jniLibs.useLegacyPackaging = true
     }
 
     lint {
@@ -84,5 +110,16 @@ dependencies {
     // USB OTG serial (CDC-ACM, CP21xx, CH34x, FTDI, Prolific)
     implementation 'com.github.mik3y:usb-serial-for-android:3.7.0'
 
+    // ODMR tab charts: pinch zoom, pan, tap for a point's value
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+
+    // USB (UVC) webcams without root: libusb + libuvc, prebuilt for all ABIs
+    implementation 'com.herohan:UVCAndroid:1.0.13'
+
+    if (hasGalaxy) implementation files('libs/galaxy/galaxy-android.jar')
+    if (hasHik) implementation files('libs/hik/MvCameraControl.jar')
+
     testImplementation 'junit:junit:4.13.2'
+    // android.jar's org.json is a stub on the JVM; the stage tests parse real frames
+    testImplementation 'org.json:json:20240303'
 }

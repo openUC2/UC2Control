@@ -16,6 +16,8 @@
     <string name="force_driver">Force driver</string>
 
     <!-- Tabs -->
+    <string name="tab_scan">Scan</string>
+    <string name="tab_odmr">ODMR</string>
     <string name="tab_stage">Stage</string>
     <string name="tab_light">Light</string>
     <string name="tab_setup">Setup</string>
@@ -29,6 +31,220 @@
     <string name="stop_all">STOP ALL</string>
     <string name="motor_power">Motor power</string>
     <string name="auto_enable_hint">Auto: coils are powered only while moving. Always on: the stage holds position but the drivers stay warm.</string>
+
+    <!-- Scan -->
+    <string name="live_title">Live view</string>
+    <string name="cam_hint">A USB webcam, the phone\'s own camera or a Daheng or HIK USB3 camera. With a USB hub the stage stays plugged in too.</string>
+    <string name="camera_type">Camera</string>
+    <string name="camera_connect">Connect</string>
+    <string name="exposure">Exposure ms</string>
+    <string name="gain">Gain</string>
+    <string name="apply_exposure">Apply</string>
+    <string name="exposure_hint">Fixed for every tile, and applied again when a scan starts. Gain is ISO on the phone, dB on Daheng and HIK, the raw value on webcams (0 = lowest). Apply also locks focus and white balance.</string>
+    <string-array name="camera_types">
+        <item>USB webcam (UVC)</item>
+        <item>Phone camera</item>
+        <item>Daheng USB3 camera</item>
+        <item>HIK USB3 camera</item>
+    </string-array>
+    <string name="overview_title">Stage overview</string>
+    <string name="overview_hint">Tap the map to move there. Green: the camera now · outlines: the next scan · thumbnails: the last scan, at commanded positions.</string>
+    <string name="cd_map">Stage overview map</string>
+    <string name="position_unknown">X — · Y — · Z —</string>
+    <string name="jog_step">JOG STEP µm</string>
+    <string name="scan_title">Tile scan</string>
+    <string name="scan_hint">Pixel size is at the sample. Empty steps = field of view minus the overlap. Registration and stitching run on the computer afterwards.</string>
+    <string name="pixel_size">PIXEL µm</string>
+    <string name="image_width">Width px</string>
+    <string name="image_height">Height px</string>
+    <string name="tiles_x">Tiles X</string>
+    <string name="tiles_y">Tiles Y</string>
+    <string name="overlap">Overlap %</string>
+    <string name="step_x">STEP X µm</string>
+    <string name="step_y">STEP Y µm</string>
+    <string name="auto">auto</string>
+    <string name="settle">Settle ms</string>
+    <string name="snake">Snake (alternate rows; raster suits the PCB stage)</string>
+    <string name="centred">Centre the grid on the current position</string>
+    <string name="return_to_start">Return to the start afterwards</string>
+    <string name="copy_to_gallery">Copy the tiles to the gallery afterwards</string>
+    <string name="scan_start">Start scan</string>
+    <string name="scan_stop">Stop</string>
+    <string name="scan_ready">Ready.</string>
+    <string name="share_scan">Share last scan (Drive, Dropbox …)</string>
+    <string name="stage_hw_title">Stage hardware</string>
+    <string name="stage_hw_hint">Connect the board at the top first; the PCB stage talks at 9600 baud. A negative µm/step inverts an axis.</string>
+    <string name="protocol">Protocol</string>
+    <string name="ums_x">µm/STEP X</string>
+    <string name="ums_y">µm/STEP Y</string>
+    <string name="ums_z">µm/STEP Z</string>
+    <string name="stage_speed">Speed steps/s</string>
+    <string name="overshoot">OVERSHOOT µsteps</string>
+    <string name="flip_x">Flip map X</string>
+    <string name="flip_y">Flip map Y</string>
+    <string-array name="stage_protocols">
+        <item>UC2 board · JSON (UC2-REST)</item>
+        <item>ShitScope PCB stage · ASCII</item>
+        <item>No stage · camera test</item>
+    </string-array>
+
+    <!-- ODMR -->
+    <string name="odmr_saved">Saved: %1$s</string>
+    <string name="share">Share</string>
+
+    <!-- ODMR tab (qBOX NV-centre experiment) -->
+    <string name="odmr_not_connected">Plug in the ODMR board (XIAO ESP32-C3/S3) and tap Connect above (115200 baud).</string>
+    <string name="odmr_connected">ODMR board connected</string>
+    <string name="odmr_firmware">ODMR firmware %1$s · %2$s · %3$s</string>
+    <string name="odmr_no_version">No reply to VERSION: is this the ODMR board?</string>
+    <string name="odmr_tab_sweep">Sweep</string>
+    <string name="odmr_tab_live">Live</string>
+    <string name="odmr_tab_ratio">B-field</string>
+    <string name="odmr_tab_align">Alignment</string>
+    <string name="odmr_tab_info">Info</string>
+    <string name="odmr_no_data">No data yet</string>
+    <string name="odmr_chart_hint">Pinch to zoom, drag to pan, tap a point for its value.</string>
+    <string name="odmr_fit">Fit</string>
+    <string name="odmr_clear">Clear</string>
+    <string name="odmr_csv">CSV</string>
+    <string name="odmr_png">PNG</string>
+    <string name="odmr_window">Window</string>
+    <string name="odmr_y_range">Y range</string>
+    <string name="odmr_y_min">Y min</string>
+    <string name="odmr_y_max">Y max</string>
+    <string name="odmr_auto">auto</string>
+    <string name="odmr_running">Running…</string>
+    <string name="odmr_running_n">Running… %1$d / %2$d</string>
+    <string name="odmr_done">Done</string>
+    <string name="odmr_stopped">Stopped</string>
+    <string name="odmr_ready">Ready</string>
+    <string name="odmr_error">Error: %1$s</string>
+
+    <string name="odmr_sweep_plot">Intensity vs. frequency</string>
+    <string name="odmr_sweep_params">Sweep</string>
+    <string name="odmr_f_begin">Start MHz</string>
+    <string name="odmr_f_end">End MHz</string>
+    <string name="odmr_f_step">Step MHz</string>
+    <string name="odmr_averages">Averages</string>
+    <string name="odmr_settle">Settle ms</string>
+    <string name="odmr_start_sweep">Start sweep</string>
+    <string name="odmr_stop_sweep">Stop sweep</string>
+    <string name="odmr_sweep_summary">%1$d points · takes about %2$d:%3$02d min</string>
+    <string name="odmr_sweep_too_long">%1$s · ⚠ max. 600 points</string>
+    <string name="odmr_sweep_invalid">Start &lt; end and step &gt; 0 required.</string>
+    <string name="odmr_series">Measurement series</string>
+    <string name="odmr_no_series">No series yet. Each finished sweep is kept here (last 20).</string>
+    <string name="odmr_series_label">#%1$d · %2$s–%3$s MHz · step %4$s · %5$d pts</string>
+    <string name="odmr_series_hint">Tick to show, tap the colour to change it.</string>
+
+    <string name="odmr_live_plot">Intensity vs. time</string>
+    <string name="odmr_live_control">Live monitor</string>
+    <string name="odmr_live_hint">Measures the fluorescence continuously at one fixed microwave frequency, e.g. to watch the effect of a magnet directly.</string>
+    <string name="odmr_frequency">Frequency MHz</string>
+    <string name="odmr_interval">Interval</string>
+    <string name="odmr_start_live">Start live monitor</string>
+    <string name="odmr_stop_live">Stop live monitor</string>
+    <string name="odmr_readings">%1$d readings</string>
+
+    <string name="odmr_ratio_title">B-field monitor</string>
+    <string name="odmr_ratio_help">The normalised ratio r = (I₁−I₂)/(I₁+I₂) is proportional to the magnetic field shift. Choose f₁ and f₂ symmetrically around the ODMR dip minimum.</string>
+    <string name="odmr_ratio_counts">%1$d measurements · %2$d errors</string>
+    <string name="odmr_ratio_plot">r₁₂ over time</string>
+    <string name="odmr_ratio_settings">Frequencies</string>
+    <string name="odmr_2pt">2-point</string>
+    <string name="odmr_3pt">3-point</string>
+    <string name="odmr_avg_n">Averages: %1$d</string>
+    <string name="odmr_interval_ms">Interval ms</string>
+    <string name="odmr_start">Start</string>
+    <string name="odmr_stop">Stop</string>
+
+    <string name="odmr_align_title">Photodiode intensity (live)</string>
+    <string name="odmr_align_hint">Adjust the optical path for maximum intensity. The board LED turns blue while monitoring.</string>
+    <string name="odmr_align_range">Max ≈ %1$d · optimal %2$d – %3$d. Depends on gain and integration time.</string>
+    <string name="odmr_optimal">Optimal</string>
+    <string name="odmr_good">Good</string>
+    <string name="odmr_adjust">Adjustment required</string>
+    <string name="odmr_saturated">Saturated: lower the gain</string>
+    <string name="odmr_align_plot">Intensity history</string>
+    <string name="odmr_sensor">Sensor (TSL2591)</string>
+    <string name="odmr_gain">Gain</string>
+    <string name="odmr_integration">Integration time</string>
+    <string name="odmr_apply">Apply</string>
+    <string name="odmr_applied">Settings applied</string>
+    <string name="odmr_tutorial">Setup step by step</string>
+    <string name="odmr_prev">Back</string>
+    <string name="odmr_next">Next</string>
+
+    <string name="odmr_info_title">About</string>
+    <string name="odmr_info_text">This tab drives the openUC2 qBOX ODMR board over USB with its serial protocol; the same measurements are in the browser at youseetoo.github.io/odmr and on the board\'s own WiFi pages (http://192.168.4.1). Files are saved to Download/UC2 ODMR and can be shared from the message that follows.</string>
+    <string name="odmr_principle_title">ODMR principle</string>
+    <string name="odmr_principle_text">NV centres in diamond show spin-dependent fluorescence. Microwaves at the resonance frequency (~2.87 GHz) lower the fluorescence measurably. External magnetic fields shift the resonance through the Zeeman effect, which is the basis of the magnetic field measurement.</string>
+    <string name="odmr_safety">⚠ Never look into the laser. Careful with magnets near implants and electronics.</string>
+    <string name="odmr_docs">Open the ODMR tutorial</string>
+    <string name="odmr_cd_lattice">NV centre in the diamond lattice</string>
+
+    <string-array name="odmr_windows">
+        <item>10 s</item>
+        <item>30 s</item>
+        <item>60 s</item>
+        <item>120 s</item>
+        <item>All</item>
+    </string-array>
+    <string-array name="odmr_intervals">
+        <item>100 ms</item>
+        <item>250 ms</item>
+        <item>500 ms</item>
+        <item>1000 ms</item>
+    </string-array>
+    <string-array name="odmr_ratio_ranges">
+        <item>auto</item>
+        <item>±0.1</item>
+        <item>±0.5</item>
+        <item>±1</item>
+    </string-array>
+    <string-array name="odmr_align_y">
+        <item>auto</item>
+        <item>stretch (min–max)</item>
+        <item>full (0–max)</item>
+    </string-array>
+    <string-array name="odmr_gains">
+        <item>Low (1×)</item>
+        <item>Medium (25×)</item>
+        <item>High (428×)</item>
+        <item>Max (9876×)</item>
+    </string-array>
+    <string-array name="odmr_int_times">
+        <item>100 ms</item>
+        <item>200 ms</item>
+        <item>300 ms</item>
+        <item>400 ms</item>
+        <item>500 ms</item>
+        <item>600 ms</item>
+    </string-array>
+    <string-array name="odmr_tutorial_titles">
+        <item>Set up base plate</item>
+        <item>Insert laser module</item>
+        <item>Position mirror</item>
+        <item>Insert beam splitter</item>
+        <item>Insert lens</item>
+        <item>Position NV sample</item>
+        <item>Align photodiode</item>
+        <item>Coarse alignment</item>
+        <item>Fine alignment</item>
+        <item>Microwave antenna</item>
+    </string-array>
+    <string-array name="odmr_tutorial_texts">
+        <item>Place the UC2 base plate on a stable, vibration-free surface. All optical components will be mounted on it.</item>
+        <item>Insert the laser module (532 nm green diode) into the designated cube. Do NOT turn it on yet! Have safety glasses ready.</item>
+        <item>Place the 45° mirror so it deflects the laser beam by 90° toward the sample.</item>
+        <item>Insert the beam splitter with longpass filter. It separates the excitation light (green) from the fluorescence light (red).</item>
+        <item>Place the converging lens in the beam path. It focuses the laser onto the NV diamond sample.</item>
+        <item>Place the NV diamond on the XY stage. Roughly position it in the focal point of the lens.</item>
+        <item>Place the photodiode (TSL2591) behind the beam splitter. It receives the red fluorescence light.</item>
+        <item>Turn on the laser. Start monitoring above. Slowly move the sample until a signal appears. Target: status \"Good\".</item>
+        <item>Optimise sample and lens position for maximum intensity while watching the intensity history. Target: status \"Optimal\".</item>
+        <item>Position the microwave antenna close to the sample. Switch to the Sweep tab and run a first ODMR scan.</item>
+    </string-array>
 
     <!-- Light -->
     <string name="lasers_title">Laser / LED channels</string>
