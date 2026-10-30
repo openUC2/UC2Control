@@ -92,10 +92,11 @@ public class MainActivity extends AppCompatActivity implements UsbSerialManager.
         setupLight();
         setupSetup();
         setupConsole();
-        scanTab = new ScanTab(this, serial);
-        odmrTab = new OdmrTab(this, serial, () -> {
-            if (serial.getState() == UsbSerialManager.State.DISCONNECTED) serial.connect(selectedBaud());
-        });
+        // Received lines for the Scan tab's stages and the ODMR tab (one board at a time)
+        SerialLink link = new SerialLink(serial);
+        serial.setRawListener(link);
+        scanTab = new ScanTab(this, serial, link);
+        odmrTab = new OdmrTab(this, link);
 
         setUiEnabled(false);
         printBanner();
@@ -719,7 +720,6 @@ public class MainActivity extends AppCompatActivity implements UsbSerialManager.
 
     @Override
     public void onSerialData(String data) {
-        odmrTab.onSerialData(data);
         console.append(data, colRx);
         refreshConsole();
     }

@@ -110,6 +110,9 @@ dependencies {
     // USB OTG serial (CDC-ACM, CP21xx, CH34x, FTDI, Prolific)
     implementation 'com.github.mik3y:usb-serial-for-android:3.7.0'
 
+    // ODMR tab charts: pinch zoom, pan, tap for a point's value
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+
     // USB (UVC) webcams without root: libusb + libuvc, prebuilt for all ABIs
     implementation 'com.herohan:UVCAndroid:1.0.13'
 

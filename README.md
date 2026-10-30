@@ -13,11 +13,11 @@ tiled 2D scans saved on the phone in the ShitScope folder layout, copied to
 the gallery, ready to share to Drive or Dropbox and to stitch on a computer
 with ImSwitch.
 
-The **ODMR** tab is the openUC2 qBOX
-[NV-centre ODMR WebSerial app](https://youseetoo.github.io/odmr), the same page
-as in the browser, talking to the ODMR board (XIAO ESP32-C3/S3) over this
-app's USB connection: frequency sweeps, live monitor, B-field ratio, alignment,
-CSV/PNG export into `Download/UC2 ODMR/` and the share sheet.
+The **ODMR** tab runs the openUC2 qBOX NV-centre experiment on the ODMR board
+(XIAO ESP32-C3/S3) over the same USB connection: frequency sweeps, live
+monitor, B-field ratio, alignment with a setup tutorial, zoomable charts with
+a tap-for-value readout, CSV/PNG export into `Download/UC2 ODMR/` and the
+share sheet. Same tools as the [ODMR WebSerial app](https://youseetoo.github.io/odmr).
 
 <!-- Screenshots go here once you have a board to point it at. -->
 
@@ -373,28 +373,23 @@ phone camera and Daheng cameras need no root.
 
 ## ODMR (qBOX)
 
-The ODMR tab runs the
-[ODMR WebSerial app](https://github.com/openUC2/TechnicalDocs-openUC2-QBox/tree/main/Production_Files/Software/ODMR_Server/webserial-app)
-unchanged in a WebView, so phone and browser look and work alike:
+Native, with the same measurements and CSV columns as the
+[ODMR WebSerial app](https://youseetoo.github.io/odmr):
 
 1. Flash the ODMR firmware from the [openUC2 web flasher](https://youseetoo.github.io)
    (category qBOX → *ODMR server*).
-2. Plug the board in, open the **ODMR** tab and tap **Connect device** (115200 baud,
-   the board's native USB — no driver needed).
-3. Sweep, monitor, align. **CSV ↓** / **PNG ↓** save to `Download/UC2 ODMR/`
-   (Android 10+, otherwise the app's own folder); the message that follows has
-   **Share**.
+2. Plug the board in and tap **Connect** (115200 baud, the board's native USB,
+   no driver needed). The ODMR tab shows the firmware version once it answers;
+   tap that line to ask again.
+3. **Sweep**, **Live**, **B-field**, **Alignment**, **Info**. Pinch a chart to
+   zoom, drag to pan, tap a point for its value, **Fit** to zoom out. Finished
+   sweeps are kept (last 20) and can be shown, recoloured or deleted.
+4. **CSV** / **PNG** save to `Download/UC2 ODMR/` (Android 10+, otherwise the
+   app's own folder); the message that follows has **Share**.
 
-The webapp's serial commands are in the firmware's
-[SERIAL_PROTOCOL.md](https://github.com/openUC2/TechnicalDocs-openUC2-QBox/blob/main/Production_Files/Software/ODMR_Server/SERIAL_PROTOCOL.md).
-`assets/uc2-bridge.js` gives the page `navigator.serial` on top of the app's USB
-port and hands its downloads to `OdmrTab.java`.
-
-To bring in a newer webapp:
-
-```bash
-tools/sync_odmr_webapp.sh /path/to/TechnicalDocs-openUC2-QBox/Production_Files/Software/ODMR_Server/webserial-app
-```
+`OdmrDevice.java` speaks the firmware's
+[serial protocol](https://github.com/openUC2/TechnicalDocs-openUC2-QBox/blob/main/Production_Files/Software/ODMR_Server/SERIAL_PROTOCOL.md);
+charts are [MPAndroidChart](https://github.com/PhilJay/MPAndroidChart).
 
 ---
 
@@ -437,7 +432,8 @@ app/src/main/
 │   ├── UsbDrivers.java         probe table, forced drivers, USB diagnostics
 │   ├── UC2Commands.java        JSON command builders
 │   ├── ConsoleBuffer.java      bounded, colourised console
-│   ├── OdmrTab.java            ODMR tab: the ODMR webapp in a WebView, saving, sharing
+│   ├── OdmrTab.java            ODMR tab: sweep, live, B-field, alignment, charts, CSV/PNG, share
+│   ├── OdmrDevice.java         ODMR board serial protocol (SWEEP, MEASURE, RATIO, …)
 │   ├── ScanTab.java            Scan tab: wiring, settings, scan start/stop, share
 │   ├── TileScan.java           scan grid + the scan loop, ShitScope folder layout
 │   ├── StageMapView.java       stage overview: plan, thumbnails, field of view, tap
@@ -448,8 +444,6 @@ app/src/main/
 │   ├── Camera.java             camera interface + preview painter
 │   ├── UvcCamera.java          USB webcams (UVCAndroid)
 │   └── PhoneCamera.java        the phone's own camera (Camera2)
-├── assets/odmr/                ODMR WebSerial app (copy, tools/sync_odmr_webapp.sh)
-├── assets/uc2-bridge.js        navigator.serial + downloads for the ODMR webapp
 └── res/
     ├── layout/                 activity_main + one layout per tab
     ├── values/                 colors (brand palette), themes, strings
@@ -463,7 +457,6 @@ app/src/hik/java/               HikCamera.java, built only with Hikrobot's SDK
 app/libs/hik/                   Hikrobot MvCamCtrl SDK (git-ignored, see "HIK cameras")
 app/src/test/                   protocol, grid and stage tests, no device needed
 tools/stitch_scan.py            register + stitch a phone scan with ImSwitch
-tools/sync_odmr_webapp.sh       copy the ODMR webapp into assets/odmr
 ```
 
 ---

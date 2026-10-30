@@ -126,11 +126,10 @@ final class ScanTab implements Camera.Listener {
     private double fovW, fovH, stepX, stepY, pixel, overlap;
     private int imgW, imgH;
 
-    ScanTab(AppCompatActivity activity, UsbSerialManager serial) {
+    ScanTab(AppCompatActivity activity, UsbSerialManager serial, SerialLink link) {
         this.activity = activity;
         this.serial = serial;
-        link = new SerialLink(serial);
-        serial.setRawListener(link);
+        this.link = link;
         prefs = activity.getSharedPreferences("scan", Context.MODE_PRIVATE);
 
         preview = activity.findViewById(R.id.tex_preview);
@@ -712,7 +711,6 @@ final class ScanTab implements Camera.Listener {
         if (scan != null) scan.requestStop();
         hw.shutdown();
         if (camera != null) camera.close();
-        serial.setRawListener(null);
     }
 
     // ======================================================================

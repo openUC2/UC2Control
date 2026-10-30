@@ -1,0 +1,497 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ODMR tab: the qBOX NV-centre experiment (OdmrTab.java). Five pages under
+     their own tab row, each a scrolling column of cards. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/tab_content_odmr"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/tv_odmr_device"
+        style="@style/Text.Hint"
+        android:layout_marginBottom="0dp"
+        android:background="@color/uc2_blue_tint"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:text="@string/odmr_not_connected" />
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/odmr_tabs"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="@color/surface"
+        app:tabMode="scrollable"
+        app:tabIndicatorColor="@color/accent"
+        app:tabIndicatorHeight="2dp"
+        app:tabSelectedTextColor="@color/primary"
+        app:tabTextColor="@color/text_muted"
+        app:tabTextAppearance="@style/Text.Tab" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- ================= Sweep ================= -->
+        <ScrollView
+            android:id="@+id/odmr_page_sweep"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/Text.SectionTitle" android:text="@string/odmr_sweep_plot" />
+                    <com.github.mikephil.charting.charts.LineChart
+                        android:id="@+id/chart_sweep"
+                        android:layout_width="match_parent"
+                        android:layout_height="300dp" />
+                    <TextView style="@style/Text.Hint" android:layout_marginBottom="8dp"
+                        android:text="@string/odmr_chart_hint" />
+                    <LinearLayout style="@style/Row">
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_sweep_fit"
+                            style="@style/Btn.Outline" android:layout_marginEnd="6dp" android:text="@string/odmr_fit" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_sweep_clear"
+                            style="@style/Btn.Outline" android:layout_marginEnd="6dp" android:text="@string/odmr_clear" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_sweep_csv"
+                            style="@style/Btn.Accent" android:layout_marginEnd="6dp" android:text="@string/odmr_csv" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_sweep_png"
+                            style="@style/Btn.Accent" android:text="@string/odmr_png" />
+                    </LinearLayout>
+                    <LinearLayout style="@style/Row" android:layout_marginTop="10dp">
+                        <LinearLayout style="@style/FieldColumn">
+                            <TextView style="@style/Text.Label" android:text="@string/odmr_y_min" />
+                            <EditText android:id="@+id/et_sweep_ymin" style="@style/NumberInput"
+                                android:inputType="numberDecimal|numberSigned" android:hint="@string/odmr_auto"
+                                android:autofillHints="" />
+                        </LinearLayout>
+                        <LinearLayout style="@style/FieldColumn" android:layout_marginEnd="0dp">
+                            <TextView style="@style/Text.Label" android:text="@string/odmr_y_max" />
+                            <EditText android:id="@+id/et_sweep_ymax" style="@style/NumberInput"
+                                android:inputType="numberDecimal|numberSigned" android:hint="@string/odmr_auto"
+                                android:autofillHints="" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/Text.SectionTitle" android:text="@string/odmr_sweep_params" />
+                    <LinearLayout style="@style/Row">
+                        <LinearLayout style="@style/FieldColumn">
+                            <TextView style="@style/Text.Label" android:text="@string/odmr_f_begin" />
+                            <EditText android:id="@+id/et_f_begin" style="@style/NumberInput"
+                                android:inputType="numberDecimal" android:text="2820" android:autofillHints="" />
+                        </LinearLayout>
+                        <LinearLayout style="@style/FieldColumn">
+                            <TextView style="@style/Text.Label" android:text="@string/odmr_f_end" />
+                            <EditText android:id="@+id/et_f_end" style="@style/NumberInput"
+                                android:inputType="numberDecimal" android:text="2920" android:autofillHints="" />
+                        </LinearLayout>
+                        <LinearLayout style="@style/FieldColumn" android:layout_marginEnd="0dp">
+                            <TextView style="@style/Text.Label" android:text="@string/odmr_f_step" />
+                            <EditText android:id="@+id/et_f_step" style="@style/NumberInput"
+                                android:inputType="numberDecimal" android:text="2" android:autofillHints="" />
+                        </LinearLayout>
+                    </LinearLayout>
+                    <LinearLayout style="@style/Row" android:layout_marginTop="10dp">
+                        <LinearLayout style="@style/FieldColumn">
+                            <TextView style="@style/Text.Label" android:text="@string/odmr_averages" />
+                            <EditText android:id="@+id/et_sweep_avg" style="@style/NumberInput"
+                                android:inputType="number" android:text="1" android:autofillHints="" />
+                        </LinearLayout>
+                        <LinearLayout style="@style/FieldColumn" android:layout_marginEnd="0dp">
+                            <TextView style="@style/Text.Label" android:text="@string/odmr_settle" />
+                            <EditText android:id="@+id/et_sweep_settle" style="@style/NumberInput"
+                                android:inputType="number" android:text="10" android:autofillHints="" />
+                        </LinearLayout>
+                    </LinearLayout>
+                    <TextView android:id="@+id/tv_sweep_summary" style="@style/Text.Hint"
+                        android:layout_marginTop="8dp" android:layout_marginBottom="8dp" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_sweep"
+                        style="@style/Btn.Go"
+                        android:layout_width="match_parent"
+                        android:enabled="false"
+                        android:text="@string/odmr_start_sweep" />
+                    <ProgressBar
+                        android:id="@+id/pb_sweep"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp" />
+                    <TextView android:id="@+id/tv_sweep_status" style="@style/Text.Hint"
+                        android:layout_marginBottom="0dp" android:text="@string/odmr_ready" />
+                </LinearLayout>
+
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/Text.SectionTitle" android:text="@string/odmr_series" />
+                    <TextView android:id="@+id/tv_series_hint" style="@style/Text.Hint"
+                        android:text="@string/odmr_no_series" />
+                    <LinearLayout
+                        android:id="@+id/list_series"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- ================= Live ================= -->
+        <ScrollView
+            android:id="@+id/odmr_page_live"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/Text.SectionTitle" android:text="@string/odmr_live_plot" />
+                    <com.github.mikephil.charting.charts.LineChart
+                        android:id="@+id/chart_live"
+                        android:layout_width="match_parent"
+                        android:layout_height="260dp" />
+                    <LinearLayout style="@style/Row" android:layout_marginTop="8dp">
+                        <Spinner android:id="@+id/sp_live_window" android:layout_width="0dp"
+                            android:layout_height="44dp" android:layout_weight="1" android:layout_marginEnd="6dp"
+                            android:background="@drawable/bg_input" android:paddingStart="10dp"
+                            android:contentDescription="@string/odmr_window" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_live_fit"
+                            style="@style/Btn.Outline" android:layout_marginEnd="6dp" android:text="@string/odmr_fit" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_live_clear"
+                            style="@style/Btn.Outline" android:layout_marginEnd="6dp" android:text="@string/odmr_clear" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_live_csv"
+                            style="@style/Btn.Accent" android:text="@string/odmr_csv" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/Text.SectionTitle" android:text="@string/odmr_live_control" />
+                    <TextView style="@style/Text.Hint" android:text="@string/odmr_live_hint" />
+                    <LinearLayout style="@style/Row">
+                        <LinearLayout style="@style/FieldColumn">
+                            <TextView style="@style/Text.Label" android:text="@string/odmr_frequency" />
+                            <EditText android:id="@+id/et_live_freq" style="@style/NumberInput"
+                                android:inputType="numberDecimal" android:text="2870" android:autofillHints="" />
+                        </LinearLayout>
+                        <LinearLayout style="@style/FieldColumn" android:layout_marginEnd="0dp">
+                            <TextView style="@style/Text.Label" android:text="@string/odmr_interval" />
+                            <Spinner android:id="@+id/sp_live_interval" android:layout_width="match_parent"
+                                android:layout_height="44dp" android:background="@drawable/bg_input"
+                                android:paddingStart="10dp" android:contentDescription="@string/odmr_interval" />
+                        </LinearLayout>
+                    </LinearLayout>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_live"
+                        style="@style/Btn.Go"
+                        android:layout_width="match_parent"
+                        android:layout_marginTop="12dp"
+                        android:enabled="false"
+                        android:text="@string/odmr_start_live" />
+                    <LinearLayout style="@style/Row" android:layout_marginTop="10dp">
+                        <TextView
+                            android:id="@+id/tv_live_value"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/space_grotesk_bold"
+                            android:textColor="@color/primary"
+                            android:textSize="32sp"
+                            android:text="---" />
+                        <TextView android:id="@+id/tv_live_count" style="@style/Text.Mono"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- ================= B-field (ratio) ================= -->
+        <ScrollView
+            android:id="@+id/odmr_page_ratio"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/Text.SectionTitle" android:text="@string/odmr_ratio_title" />
+                    <TextView
+                        android:id="@+id/tv_ratio_r12"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:fontFamily="@font/space_grotesk_bold"
+                        android:textColor="@color/primary"
+                        android:textSize="40sp"
+                        android:text="---" />
+                    <TextView android:id="@+id/tv_ratio_values" style="@style/Text.Mono"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:gravity="center" android:layout_marginBottom="6dp" />
+                    <TextView android:id="@+id/tv_ratio_counts" style="@style/Text.Hint"
+                        android:gravity="center" android:layout_marginBottom="10dp" />
+                    <LinearLayout style="@style/Row">
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_ratio_start"
+                            style="@style/Btn.Go" android:layout_width="0dp" android:layout_weight="1"
+                            android:layout_marginEnd="8dp" android:enabled="false" android:text="@string/odmr_start" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_ratio_stop"
+                            style="@style/Btn.Danger" android:layout_width="0dp" android:layout_weight="1"
+                            android:enabled="false" android:text="@string/odmr_stop" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/Text.SectionTitle" android:text="@string/odmr_ratio_plot" />
+                    <com.github.mikephil.charting.charts.LineChart
+                        android:id="@+id/chart_ratio"
+                        android:layout_width="match_parent"
+                        android:layout_height="240dp" />
+                    <LinearLayout style="@style/Row" android:layout_marginTop="8dp">
+                        <Spinner android:id="@+id/sp_ratio_window" android:layout_width="0dp"
+                            android:layout_height="44dp" android:layout_weight="1" android:layout_marginEnd="6dp"
+                            android:background="@drawable/bg_input" android:paddingStart="10dp"
+                            android:contentDescription="@string/odmr_window" />
+                        <Spinner android:id="@+id/sp_ratio_range" android:layout_width="0dp"
+                            android:layout_height="44dp" android:layout_weight="1"
+                            android:background="@drawable/bg_input" android:paddingStart="10dp"
+                            android:contentDescription="@string/odmr_y_range" />
+                    </LinearLayout>
+                    <LinearLayout style="@style/Row" android:layout_marginTop="8dp">
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_ratio_fit"
+                            style="@style/Btn.Outline" android:layout_marginEnd="6dp" android:text="@string/odmr_fit" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_ratio_clear"
+                            style="@style/Btn.Outline" android:layout_marginEnd="6dp" android:text="@string/odmr_clear" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_ratio_csv"
+                            style="@style/Btn.Accent" android:text="@string/odmr_csv" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/Text.SectionTitle" android:text="@string/odmr_ratio_settings" />
+                    <TextView style="@style/Text.Hint" android:text="@string/odmr_ratio_help" />
+                    <RadioGroup android:id="@+id/rg_ratio_mode" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:orientation="horizontal">
+                        <RadioButton android:id="@+id/rb_2pt" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" android:layout_marginEnd="16dp"
+                            android:checked="true" android:text="@string/odmr_2pt" />
+                        <RadioButton android:id="@+id/rb_3pt" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" android:text="@string/odmr_3pt" />
+                    </RadioGroup>
+                    <LinearLayout style="@style/Row" android:layout_marginTop="6dp">
+                        <LinearLayout style="@style/FieldColumn">
+                            <TextView style="@style/Text.Label" android:text="f₁ MHz" />
+                            <EditText android:id="@+id/et_rf1" style="@style/NumberInput"
+                                android:inputType="numberDecimal" android:text="2865" android:autofillHints="" />
+                        </LinearLayout>
+                        <LinearLayout style="@style/FieldColumn">
+                            <TextView style="@style/Text.Label" android:text="f₂ MHz" />
+                            <EditText android:id="@+id/et_rf2" style="@style/NumberInput"
+                                android:inputType="numberDecimal" android:text="2875" android:autofillHints="" />
+                        </LinearLayout>
+                        <LinearLayout android:id="@+id/col_rf3" style="@style/FieldColumn"
+                            android:layout_marginEnd="0dp" android:visibility="invisible">
+                            <TextView style="@style/Text.Label" android:text="f₃ MHz" />
+                            <EditText android:id="@+id/et_rf3" style="@style/NumberInput"
+                                android:inputType="numberDecimal" android:text="2870" android:autofillHints="" />
+                        </LinearLayout>
+                    </LinearLayout>
+                    <TextView android:id="@+id/tv_ratio_avg" style="@style/Text.Label" android:layout_marginTop="10dp" />
+                    <SeekBar android:id="@+id/sb_ratio_avg" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:max="9" android:progress="2" />
+                    <TextView style="@style/Text.Label" android:layout_marginTop="10dp"
+                        android:text="@string/odmr_interval_ms" />
+                    <EditText android:id="@+id/et_ratio_interval" style="@style/NumberInput"
+                        android:inputType="number" android:text="500" android:autofillHints="" />
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- ================= Alignment ================= -->
+        <ScrollView
+            android:id="@+id/odmr_page_align"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/Text.SectionTitle" android:text="@string/odmr_align_title" />
+                    <TextView style="@style/Text.Hint" android:text="@string/odmr_align_hint" />
+                    <LinearLayout style="@style/Row">
+                        <TextView
+                            android:id="@+id/tv_align_value"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/space_grotesk_bold"
+                            android:textColor="@color/primary"
+                            android:textSize="40sp"
+                            android:text="---" />
+                        <TextView
+                            android:id="@+id/tv_align_status"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="10dp"
+                            android:paddingEnd="10dp"
+                            android:paddingTop="4dp"
+                            android:paddingBottom="4dp"
+                            android:textColor="@color/text_on_brand"
+                            android:background="@color/uc2_grey"
+                            android:text="@string/odmr_ready" />
+                    </LinearLayout>
+                    <ProgressBar
+                        android:id="@+id/pb_align"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="14dp"
+                        android:layout_marginTop="6dp"
+                        android:max="1000" />
+                    <TextView android:id="@+id/tv_align_range" style="@style/Text.Hint" android:layout_marginTop="6dp" />
+                    <LinearLayout style="@style/Row">
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_align_start"
+                            style="@style/Btn.Go" android:layout_width="0dp" android:layout_weight="1"
+                            android:layout_marginEnd="8dp" android:enabled="false" android:text="@string/odmr_start" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_align_stop"
+                            style="@style/Btn.Danger" android:layout_width="0dp" android:layout_weight="1"
+                            android:enabled="false" android:text="@string/odmr_stop" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/Text.SectionTitle" android:text="@string/odmr_align_plot" />
+                    <com.github.mikephil.charting.charts.LineChart
+                        android:id="@+id/chart_align"
+                        android:layout_width="match_parent"
+                        android:layout_height="220dp" />
+                    <LinearLayout style="@style/Row" android:layout_marginTop="8dp">
+                        <Spinner android:id="@+id/sp_align_window" android:layout_width="0dp"
+                            android:layout_height="44dp" android:layout_weight="1" android:layout_marginEnd="6dp"
+                            android:background="@drawable/bg_input" android:paddingStart="10dp"
+                            android:contentDescription="@string/odmr_window" />
+                        <Spinner android:id="@+id/sp_align_y" android:layout_width="0dp"
+                            android:layout_height="44dp" android:layout_weight="1" android:layout_marginEnd="6dp"
+                            android:background="@drawable/bg_input" android:paddingStart="10dp"
+                            android:contentDescription="@string/odmr_y_range" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_align_clear"
+                            style="@style/Btn.Outline" android:text="@string/odmr_clear" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/Text.SectionTitle" android:text="@string/odmr_sensor" />
+                    <LinearLayout style="@style/Row">
+                        <LinearLayout style="@style/FieldColumn">
+                            <TextView style="@style/Text.Label" android:text="@string/odmr_gain" />
+                            <Spinner android:id="@+id/sp_gain" android:layout_width="match_parent"
+                                android:layout_height="44dp" android:background="@drawable/bg_input"
+                                android:paddingStart="10dp" android:contentDescription="@string/odmr_gain" />
+                        </LinearLayout>
+                        <LinearLayout style="@style/FieldColumn" android:layout_marginEnd="0dp">
+                            <TextView style="@style/Text.Label" android:text="@string/odmr_integration" />
+                            <Spinner android:id="@+id/sp_int_time" android:layout_width="match_parent"
+                                android:layout_height="44dp" android:background="@drawable/bg_input"
+                                android:paddingStart="10dp" android:contentDescription="@string/odmr_integration" />
+                        </LinearLayout>
+                    </LinearLayout>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_tsl_apply"
+                        style="@style/Btn"
+                        android:layout_width="match_parent"
+                        android:layout_marginTop="10dp"
+                        android:enabled="false"
+                        android:text="@string/odmr_apply" />
+                    <TextView android:id="@+id/tv_tsl_status" style="@style/Text.Hint"
+                        android:layout_marginTop="6dp" android:layout_marginBottom="0dp" />
+                </LinearLayout>
+
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/Text.SectionTitle" android:text="@string/odmr_tutorial" />
+                    <TextView
+                        android:id="@+id/tv_step_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="@font/space_grotesk_bold"
+                        android:textColor="@color/text_primary"
+                        android:textSize="16sp" />
+                    <TextView android:id="@+id/tv_step_text" style="@style/Text.Hint"
+                        android:layout_marginTop="4dp" android:textSize="14sp" />
+                    <LinearLayout style="@style/Row">
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_step_prev"
+                            style="@style/Btn.Outline" android:text="@string/odmr_prev" />
+                        <TextView android:id="@+id/tv_step_progress" style="@style/Text.Mono"
+                            android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:gravity="center" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_step_next"
+                            style="@style/Btn" android:text="@string/odmr_next" />
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/list_steps"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:orientation="vertical" />
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- ================= Info ================= -->
+        <ScrollView
+            android:id="@+id/odmr_page_info"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/Text.SectionTitle" android:text="@string/odmr_info_title" />
+                    <TextView style="@style/Text.Hint" android:textSize="14sp" android:text="@string/odmr_info_text" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_odmr_docs"
+                        style="@style/Btn.Outline"
+                        android:text="@string/odmr_docs" />
+                </LinearLayout>
+
+                <LinearLayout style="@style/Card">
+                    <TextView style="@style/Text.SectionTitle" android:text="@string/odmr_principle_title" />
+                    <TextView style="@style/Text.Hint" android:textSize="14sp" android:text="@string/odmr_principle_text" />
+                    <ImageView
+                        android:layout_width="220dp"
+                        android:layout_height="220dp"
+                        android:layout_gravity="center_horizontal"
+                        android:src="@drawable/odmr_nv_lattice"
+                        android:contentDescription="@string/odmr_cd_lattice" />
+                    <TextView style="@style/Text.Hint" android:layout_marginTop="10dp"
+                        android:layout_marginBottom="0dp" android:textColor="@color/danger"
+                        android:text="@string/odmr_safety" />
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+    </FrameLayout>
+</LinearLayout>
